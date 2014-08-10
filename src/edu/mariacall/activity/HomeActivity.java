@@ -19,7 +19,6 @@ public class HomeActivity extends ControllerActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
-		
 		initHandler();
 		
 		initValueToView();

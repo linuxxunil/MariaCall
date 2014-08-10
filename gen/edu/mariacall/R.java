@@ -33,18 +33,22 @@ public final class R {
         public static final int logo=0x7f020003;
         public static final int map_1f=0x7f020004;
         public static final int map_top=0x7f020005;
-        public static final int push_call=0x7f020006;
+        public static final int marker=0x7f020006;
+        public static final int push_call=0x7f020007;
     }
     public static final class id {
-        public static final int action_call=0x7f090008;
-        public static final int action_location=0x7f090007;
-        public static final int action_settings=0x7f090006;
+        public static final int action_call=0x7f09000b;
+        public static final int action_location=0x7f09000a;
+        public static final int action_settings=0x7f090009;
+        public static final int btn_delete_db=0x7f090007;
         public static final int container=0x7f090000;
         public static final int imageView1=0x7f090001;
-        public static final int imageView2=0x7f090003;
-        public static final int imgBtn_call=0x7f090005;
-        public static final int linearLayout1=0x7f090004;
-        public static final int view1=0x7f090002;
+        public static final int imageView2=0x7f090004;
+        public static final int imgBtn_call=0x7f090008;
+        public static final int linearLayout1=0x7f090005;
+        public static final int tViw_rssi=0x7f090006;
+        public static final int view1=0x7f090003;
+        public static final int view1FrameLayout=0x7f090002;
     }
     public static final class layout {
         public static final int activity_main=0x7f030000;

@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -14,56 +15,13 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.FrameLayout;
 
 
 
-class Map1FView extends SurfaceView implements SurfaceHolder.Callback {
-
-	private SurfaceHolder hold;
-	private Bitmap backgroud, marker;
-	private Canvas canvas;
-	
-	public Map1FView(Context context) {
-		super(context);
-		hold = getHolder();
-		hold.addCallback(this);
-		
-		backgroud = BitmapFactory.decodeResource(getResources(), R.drawable.map_1f);
-		marker = BitmapFactory.decodeResource(getResources(), R.drawable.logo);
-	}
-	
-
-	@Override
-	public void surfaceCreated(SurfaceHolder holder) {
-		canvas = holder.lockCanvas();
-		canvas.drawBitmap(backgroud, null, new Rect(0, 0, getWidth(), getHeight()), null); 
-		holder.unlockCanvasAndPost(canvas);
-	}
-	
-	public void addMarker(int x, int y) {
-		 
-		canvas = getHolder().lockCanvas();
-		//canvas.drawBitmap(backgroud, null, new Rect(0, 0, getWidth(), getHeight()), null); 
-		canvas.drawBitmap(marker, x, y, null);
-		hold.unlockCanvasAndPost(canvas);
-	}
-
-	@Override
-	public void surfaceChanged(SurfaceHolder arg0, int arg1, int arg2, int arg3) {
-		// TODO Auto-generated method stub
-		System.out.println("surfaceChanged");
-		
-	}
-
-	@Override
-	public void surfaceDestroyed(SurfaceHolder arg0) {
-		// TODO Auto-generated method stub
-		System.out.println("surfaceDestroyed");
-	}
-}
 
 public class Map1FActivity extends ControllerActivity {
-	private Map1FView view;
+	//private Map1FView view;
 	private Marker view1;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -76,10 +34,12 @@ public class Map1FActivity extends ControllerActivity {
 	}
 
 	private void initLayout() {
-		//setContentView(R.layout.activity_map_1f);
-		//view = new Map1FView(this);
+		setContentView(R.layout.activity_map_1f);
+		
 		view1 = new Marker(this);
-		setContentView(view1);
+		FrameLayout frameLayout = (FrameLayout)findViewById(R.id.view1FrameLayout);
+		frameLayout.addView(view1);
+	
 	}
 
 
@@ -118,28 +78,22 @@ public class Map1FActivity extends ControllerActivity {
 
 class Marker extends View {
 
-	private final int TAG_INIT = 1;
-	private final int TAG_ADD_MARKER = 2;
-	private int mode = TAG_INIT;
+	private final int TAG_ADD_MARKER = 1;
+	private int mode = TAG_ADD_MARKER;
 
 	private Bitmap backgroud, marker;
 	private int x,y;
 	
 	public Marker(Context context) {
 		super(context);
-		backgroud = BitmapFactory.decodeResource(getResources(), R.drawable.map_1f);
-		marker = BitmapFactory.decodeResource(getResources(), R.drawable.logo);
-		mode = TAG_INIT;
+		marker = BitmapFactory.decodeResource(getResources(), R.drawable.marker);
 	}
 	
 	@Override
 	protected void onDraw (Canvas canvas) {
 		super.onDraw(canvas);
+	
 		switch (mode) {
-		case TAG_INIT:
-			canvas.drawBitmap(backgroud, null, new Rect(0, 0, getWidth(), getHeight()), null); 
-			
-			break;
 		case TAG_ADD_MARKER:
 			canvas.drawBitmap(marker, x, y, null);
 			break;
@@ -149,7 +103,7 @@ class Marker extends View {
 	public void addMarker(int x, int y) {
 		this.x = x;
 		this.y = y;
-		mode = ADD_MARKER_TAG;
+		mode = TAG_ADD_MARKER;
 	}
 	
 	int a = 0;
@@ -157,10 +111,8 @@ class Marker extends View {
 	public boolean onTouchEvent(MotionEvent event) {
 		int x = (int) event.getX();
 		int y = (int) event.getY();
-
-
 		
-			addMarker(x, y);
+		addMarker(x, y);
 			
 		invalidate();
 		return false; 

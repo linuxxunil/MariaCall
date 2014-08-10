@@ -13,18 +13,34 @@
         android:layout_marginTop="224dp"
         android:orientation="vertical" >
 
-        <ImageButton
-            android:id="@+id/imgBtn_call"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="78dp"
-            android:background="@color/white"
-            android:src="@drawable/call" />
-
-       
-
     </LinearLayout>
 
-   
+    <TextView
+        android:id="@+id/tViw_rssi"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_toLeftOf="@+id/linearLayout1"
+        android:text="TextView" />
+
+    <Button
+        android:id="@+id/btn_delete_db"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/linearLayout1"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="24dp"
+        android:text="DeleteDB" />
+
+    <ImageButton
+        android:id="@+id/imgBtn_call"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/linearLayout1"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="54dp"
+        android:background="@color/white"
+        android:src="@drawable/call" />
 
 </RelativeLayout>
