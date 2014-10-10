@@ -11,9 +11,9 @@ import android.os.Build;
 import android.os.Handler;
 
 public class Beacon {
-	private BluetoothAdapter mBluetoothAdapter;
-	final private BluetoothManager bluetoothManager;
-
+	private BluetoothAdapter mBluetoothAdapter = null;
+	private BluetoothManager bluetoothManager = null;
+	private Context context = null;
 	static private int benchmark = -64; 
 	static private double n = 2.92;
 			
@@ -33,6 +33,8 @@ public class Beacon {
 
 
 	public Beacon(Context context) {
+		this.context = context;
+		
 		bluetoothManager =
 		        (BluetoothManager) context.getSystemService(
 		        					context.BLUETOOTH_SERVICE);
@@ -48,13 +50,20 @@ public class Beacon {
 	}
 	
 	public void startLeScan(LeScanCallback leStartCallBack) {
-		if ( mBluetoothAdapter.isEnabled() )
-			mBluetoothAdapter.startLeScan(leStartCallBack);
+		try {
+			mBluetoothAdapter.enable();
+			Thread.sleep(3000);
+			if ( mBluetoothAdapter.isEnabled())
+				mBluetoothAdapter.startLeScan(leStartCallBack);
+		} catch (InterruptedException e) {
+		}
 	}
 	
 	public void stopLeScan(LeScanCallback leStartCallBack) {
-		if ( mBluetoothAdapter.isEnabled() )
+		
+		if ( mBluetoothAdapter.isEnabled() ) 	
 			mBluetoothAdapter.stopLeScan(leStopCallBack);
+		mBluetoothAdapter.disable();
 	}
 	
 	private LeScanCallback leStartCallBack = new LeScanCallback(){

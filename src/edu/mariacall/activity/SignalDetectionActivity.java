@@ -14,6 +14,7 @@ import edu.mariacall.R;
 import edu.mariacall.algorithm.Kalman;
 import edu.mariacall.database.DatabaseDriver;
 import edu.mariacall.database.DatabaseTable;
+import edu.mariacall.database.SqliteDriver;
 import edu.mariacall.location.Beacon;
 import android.app.ActionBar.LayoutParams;
 import android.bluetooth.BluetoothDevice;
@@ -28,12 +29,15 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 public class SignalDetectionActivity extends ControllerActivity {
 
 	private Button	btnStart = null;
 	private EditText eTxtDbName = null;
 	private EditText eTxtDetectTimes = null;
+	private TextView tViwCurrentRSSI = null;
+	private TextView tViwCurrentMAC = null;
 	private DatabaseDriver db = null;
 	private boolean flgStart = false;
 	
@@ -49,11 +53,11 @@ public class SignalDetectionActivity extends ControllerActivity {
     private Context context; 
     private LinkedList<Integer> yList = new LinkedList<Integer>();
    
-    private int xCount = 0;  
-    private int xCountMax = -1;	
+    private int nowTimes = 0;  
+    private int maxTimes = -1;	
     
     /* bluetooth */
-    private Beacon beacon;
+    private Beacon beacon = null;
     
     /* Initial */
 	@Override
@@ -68,7 +72,8 @@ public class SignalDetectionActivity extends ControllerActivity {
 		
 		initDatabase();
 		
-		locationStart();
+		if ( beacon == null )
+			beacon = new Beacon(context);
 	}
 	
 	private void initLayout() {
@@ -77,7 +82,7 @@ public class SignalDetectionActivity extends ControllerActivity {
 		context = getApplicationContext();  
 		
 		//這裏獲得main界面上的布局，下面會把圖表畫在這個布局裏面  
-        LinearLayout layout = (LinearLayout)findViewById(R.id.linearLayout3);  
+        LinearLayout layout = (LinearLayout)findViewById(R.id.linearLayout4);  
         
         //這個類用來放置曲線上的所有點，是一個點的集合，根據這些點畫出曲線  
         series = new XYSeries(title);  
@@ -101,6 +106,7 @@ public class SignalDetectionActivity extends ControllerActivity {
           
         //將圖表添加到布局中去   
         layout.addView(chart, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+        
 	}
 	
 	private void initHandler() {
@@ -120,27 +126,35 @@ public class SignalDetectionActivity extends ControllerActivity {
 		btnStart = (Button) findViewById(R.id.sig_btnStart);
 		eTxtDbName = (EditText) findViewById(R.id.sig_eTxtDbName);
 		eTxtDetectTimes = (EditText) findViewById(R.id.sig_eTxtDetectTimes);
+		tViwCurrentRSSI = (TextView) findViewById(R.id.sig_tViwCurrentRSSI);
+		tViwCurrentMAC = (TextView) findViewById(R.id.sig_tViwCurrentMAC);
+		
 		
 		btnStart.setOnClickListener(new Button.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				if ( flgStart == false ) {
 					// set detect times
-					xCountMax = Integer.valueOf(
+					maxTimes = Integer.valueOf(
 								eTxtDetectTimes.getText().toString());
 					btnStart.setText("關閉");
+					
+					// open db
+					db.onConnect();
+					
 					// location start
 					locationStart();
 
 				} else {
 					// reset detect times
-					xCountMax = -1;
+					maxTimes = -1;
 					
 					btnStart.setText("啟動");
 					// location start
 					locationStop();
 					
-					
+					// close db
+					db.close();
 				}
 				flgStart ^= true;
 			}
@@ -148,9 +162,10 @@ public class SignalDetectionActivity extends ControllerActivity {
 	}
 	
 	private void initDatabase() {
-		//db = new SqliteDriver(dbPath);
-		//db.onConnect();
-		//db.createTable(DatabaseTable.Ibeacon.create());
+		db = new SqliteDriver(dbPath + eTxtDbName.getText().toString());
+		db.onConnect();
+		db.createTable(DatabaseTable.Ibeacon.create());
+		db.close();
 	}
 	
 	private void sendMessage(int what, int statusCode, String mac ) {
@@ -165,21 +180,23 @@ public class SignalDetectionActivity extends ControllerActivity {
 		}
 	}
 	
-	private void insertBeaconInfo(String device, int rssi, double distance) {
-		String sql = "INSERT INTO " + DatabaseTable.Ibeacon.name 
-				+ "(\"" +  DatabaseTable.Ibeacon.colDevice 		+ "\","
-				+ " \"" +  DatabaseTable.Ibeacon.colRSSI		+ "\","
-				+ " \"" +  DatabaseTable.Ibeacon.colDistance 	+ "\")"
+	private void insertBeaconInfo(int deviceID, String deviceMAC, int rssi, double distance) {
+		String sql = "INSERT INTO " + DatabaseTable.Ibeacon.name
+				+ "(\"" + DatabaseTable.Ibeacon.colDeviceID	+ "\","
+				+ "	\"" + DatabaseTable.Ibeacon.colDeviceMAC	+ "\","
+				+ " \"" + DatabaseTable.Ibeacon.colRSSI		+ "\","
+				+ " \"" + DatabaseTable.Ibeacon.colDistance 	+ "\")"
 				+ " VALUES "
-				+ "(\"" +  device 		+ "\","
-				+ " \"" +  rssi 		+ "\","
-				+ " \"" +  distance 	+ "\")";
+				+ "(\"" + deviceID	+ "\","
+				+ "	\"" + deviceMAC	+ "\","
+				+ " \"" + rssi 		+ "\","
+				+ " \"" + distance 	+ "\")";
 		db.insert(sql);
 	}
 	
 	/* Location */
 	private void locationStart() {
-		beacon = new Beacon(context);
+		
 		beacon.startLeScan(new LeScanCallback(){
 			@Override
 			public void onLeScan(BluetoothDevice arg0, int rssi, byte[] scanRecord) {
@@ -193,8 +210,6 @@ public class SignalDetectionActivity extends ControllerActivity {
 		beacon.stopLeScan(new LeScanCallback(){
 			@Override
 			public void onLeScan(BluetoothDevice arg0, int rssi, byte[] scanRecord) {
-				//sendMessage(SHOW_TAG, rssi, arg0.toString());
-
 			}
 		}); 
 	}
@@ -202,8 +217,20 @@ public class SignalDetectionActivity extends ControllerActivity {
 	private void locationStartResult(Message msg) {
 		int rssi = msg.getData().getInt("rssi");
 		String mac = msg.getData().getString("mac");
+		
+		// update activity
+		tViwCurrentMAC.setText("MAC = " + mac);
+		tViwCurrentRSSI.setText("RSSI = " + rssi);
 		updateChart(rssi);
 		
+		
+		// insert info to db
+		insertBeaconInfo(0, mac, rssi, 0.0);
+		
+		if ( maxTimes == 0 )
+			return ;
+		else if ( nowTimes >= maxTimes )
+			btnStart.callOnClick();
 		/*		
 		kalman.correct(rssi);
 		kalman.predict();
@@ -238,7 +265,7 @@ public class SignalDetectionActivity extends ControllerActivity {
         renderer.setChartTitle(title);
         renderer.setXAxisMin(0);  
         renderer.setXAxisMax(100);  
-        renderer.setYAxisMin(0);  
+        renderer.setYAxisMin(-20);  
         renderer.setYAxisMax(-100);  
         renderer.setAxesColor(Color.WHITE);  
         renderer.setLabelsColor(Color.WHITE);  
@@ -251,8 +278,8 @@ public class SignalDetectionActivity extends ControllerActivity {
         renderer.setYLabelsAlign(Align.LEFT);  
         renderer.setPointSize((float) 2);  
         renderer.setShowLegend(false);
-        renderer.setPanEnabled(false);
-        renderer.setZoomEnabled(false);
+        //renderer.setPanEnabled(false);
+        //renderer.setZoomEnabled(false);
     }  
       
     private void updateChart(int rssi) {  
@@ -265,7 +292,7 @@ public class SignalDetectionActivity extends ControllerActivity {
         //點集先清空，為了做成新的點集而准備  
         series.clear();  
         
-        for (int k = 0; k < xCount; k++) {  
+        for (int k = 0; k < nowTimes; k++) {  
             series.add(k, yList.get(k));  
         }  
        
@@ -275,7 +302,7 @@ public class SignalDetectionActivity extends ControllerActivity {
         // update chart
         chart.invalidate();  
         
-        xCount++;
+        nowTimes++;
     }  
 	
 }

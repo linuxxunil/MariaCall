@@ -14,7 +14,7 @@ import android.view.Window;
 
 public class ControllerActivity extends Activity {
 	protected Handler handler = null;
-	final static protected String dbPath = "/sdcard/data/mariacall/data.db";
+	final static protected String dbPath = "/sdcard/data/mariacall/";
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {

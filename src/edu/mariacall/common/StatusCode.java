@@ -26,16 +26,10 @@ public class StatusCode {
 	final static public int success = 0;
 		
 	final static public String[] ClassInfo = {
-		"edu.mcscheduling.common.Logger"				,"00011000",
-		"edu.mcscheduling.common.Network"				,"00012000",
-		"edu.mcscheduling.database.MSSqlDriver"			,"00023000",
-		"edu.mcscheduling.database.SqliteDriver"		,"00024000",
-		"edu.mcscheduling.model.Account"				,"00031000",
-		"edu.mcscheduling.model.Hospital"				,"00032000",
-		"edu.mcscheduling.model.Department"				,"00033000",
-		"edu.mcscheduling.model.Doctor"					,"00034000",
-		"edu.mcscheduling.model.DoctorSchedule"			,"00035000",
-		"edu.mcscheduling.controller.AuthorizeActivty"	,"00041000"
+		"edu.mariacall.common.Logger"					,"00011000",
+		"edu.mariacall.common.Network"					,"00012000",
+		"edu.mariacall.database.MSSqlDriver"			,"00021000",
+		"edu.mariacall.database.SqliteDriver"			,"00022000",
 	};
 	
 	/* Common Define */
@@ -81,64 +75,6 @@ public class StatusCode {
 	final static public String ERR_MSSQL_CONNECT_ERROR		= "-001,Cannot connect to MSSQL";
 	
 	// model
-	// Account
-	final static public String ERR_LOGIN_FAIL				= "-001,Login fail (userid or password is error)";
-	final static public String ERR_MEMBER_INFO_IS_NOT		= "-002,Member info is not found";
-	final static public String ERR_GET_MEMBER_INFO_FAIL		= "-003,Get Member information fail";
-	final static public String WAR_REGISTERED_USER			= "001,Registed user";
-	// Hospital
-	final static public String WAR_HOSPITAL_NOT_SETTING		= "001,Hospital is not setting";
-	// Depatment
-	final static public String WAR_DEPARTMENT_NOT_SETTING	= "001,Department is not setting";
-	// Doctor
-	final static public String WAR_DOCTOR_NOT_SETTING		= "001,Doctor is not setting";
-	// DoctorSchedule
-	final static public String WAR_SCHEDULE_NOT_SETTING		= "001,Doctor Schudule is not setting";
-	final static public String WAR_NOT_SUPPORT_YEAR			= "002, value must gather than 2012 year";
-	final static public String ERR_GET_DEAPART_DATA_ERROR	= "-001,Get depart data error";
-	final static public String ERR_GET_DOCTOR_DATA_ERROR	= "-002,Get doctor data error";
-	final static public String ERR_GET_SCHEDULE_DATA_ERROR	= "-003,Get schudule data error";
-	
-	// controller
-	// AuthorizeActivty
-	final static public String WAR_MACT_UNINSTALLED			= "001,Mact uninstalled";
-	
-	//final static public String ERR_DEPART_NOT_EXIST			= "-002,Depart is not found";
-	//final static public String ERR_GET_MEMBER_INFO_FAIL		= "-003,Get Member information fail";
-	/*
-	final static public String WAR_REGISTER_FAIL			= "001,Register Fail";
-	final static public String WAR_LOGIN_FAIL				= "002,Login Fail";
-	final static public String WAR_PASSWD_NOT_CHANGE_FAIL	= "003,Password not change";
-	final static public String ERR_PASSWD_CHANGE_ERROR		= "-001,Password change error";
-	final static public String ERR_SET_MEMBER_INFO_ERROR	= "-002,Set member information error";
-	*/
-	/*
-	// http
-	public static int ERR_HTTP_PROTOCOL_ERR(int upperStatus, String evt) {
-		return log("-4001","HTTP Protocol error("+evt+")");
-	}
-	
-	public static int ERR_HTTP_CONNECT_ERR(int upperStatus) {
-		return log("-4002","HTTP connect error");
-	}
-	
-	public static int ERR_HTTP_RESPONSE_CODE_ERR(int upperStatus, int httCode) {
-		return log("-4003","HTTP response error("+httCode+")");
-	}
-	
-	public static int ERR_HTTP_URL_ILLEGAL(int upperStatus, String evt) {
-		return log("-4004","HTTP URL is illegal("+evt+")");
-	}
-	
-	public static int ERR_HTTP_IO_ERR(int upperStatus, String evt) {
-		return log("-4005","HTTP IO error("+evt+")");
-	}
-	
-	// Authorize Activty
-	public static int WAR_MACT_UNINSTALLED(int upperStatus) {
-		return log("10001","Mact uninstalled ");
-	}
-	*/
 }
 
 
