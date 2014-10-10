@@ -34,7 +34,7 @@ public class Map1FActivity extends ControllerActivity {
 	}
 
 	private void initLayout() {
-		setContentView(R.layout.activity_map_1f);
+		setContentView(R.layout.layout_map_1f);
 		
 		view1 = new Marker(this);
 		FrameLayout frameLayout = (FrameLayout)findViewById(R.id.view1FrameLayout);

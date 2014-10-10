@@ -1,5 +1,6 @@
 package edu.mariacall.location;
 
+import edu.mariacall.algorithm.Kalman;
 import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothAdapter.LeScanCallback;
@@ -9,10 +10,26 @@ import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
 
-@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
 public class Beacon {
 	private BluetoothAdapter mBluetoothAdapter;
 	final private BluetoothManager bluetoothManager;
+
+	static private int benchmark = -64; 
+	static private double n = 2.92;
+			
+	static public void setBenchmark(int dBmAtOneMeter) {
+		benchmark = dBmAtOneMeter;
+	}
+	
+	static public double convertToDistance(double rssi) {
+		
+
+		
+		double tmp = -(rssi - benchmark) / (10 * n);
+		
+		return Math.pow(10, tmp);
+		
+	}
 
 
 	public Beacon(Context context) {

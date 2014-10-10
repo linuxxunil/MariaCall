@@ -37,23 +37,28 @@ public final class R {
         public static final int push_call=0x7f020007;
     }
     public static final class id {
-        public static final int action_call=0x7f09000b;
-        public static final int action_location=0x7f09000a;
-        public static final int action_settings=0x7f090009;
-        public static final int btn_delete_db=0x7f090007;
+        public static final int TextView01=0x7f090007;
+        public static final int action_call=0x7f090010;
+        public static final int action_location=0x7f09000f;
+        public static final int action_settings=0x7f09000e;
+        public static final int checkBox1=0x7f09000a;
         public static final int container=0x7f090000;
         public static final int imageView1=0x7f090001;
         public static final int imageView2=0x7f090004;
-        public static final int imgBtn_call=0x7f090008;
         public static final int linearLayout1=0x7f090005;
-        public static final int tViw_rssi=0x7f090006;
+        public static final int linearLayout2=0x7f090006;
+        public static final int linearLayout3=0x7f09000d;
+        public static final int sig_btnStart=0x7f09000c;
+        public static final int sig_eTxtDbName=0x7f090008;
+        public static final int sig_eTxtDetectTimes=0x7f09000b;
+        public static final int textView1=0x7f090009;
         public static final int view1=0x7f090003;
         public static final int view1FrameLayout=0x7f090002;
     }
     public static final class layout {
-        public static final int activity_main=0x7f030000;
-        public static final int activity_map_1f=0x7f030001;
-        public static final int activity_menu=0x7f030002;
+        public static final int layout_main=0x7f030000;
+        public static final int layout_map_1f=0x7f030001;
+        public static final int layout_signal_detection=0x7f030002;
     }
     public static final class menu {
         public static final int main=0x7f080000;

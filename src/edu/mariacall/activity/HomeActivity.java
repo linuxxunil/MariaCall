@@ -39,15 +39,7 @@ public class HomeActivity extends ControllerActivity {
 	}
 	
 	private void initValueToView() {
-		setContentView(R.layout.activity_main);
-		new Thread() {
-			public void run() {
-				try {
-					Thread.sleep(1000);
-				} catch ( Exception e ) {}
-				sendMessage(INIT_TAG,0);
-			}
-		}.start();
+		setContentView(R.layout.layout_main);
 	}
 	
 	@Override
@@ -61,7 +53,7 @@ public class HomeActivity extends ControllerActivity {
 	}
 	
 	private void initValueToViewResult(Message msg) {
-		changeActivity(HomeActivity.this, MenuActivity.class);
+		changeActivity(HomeActivity.this, SignalDetectionActivity.class);
 	}
 	
 }
