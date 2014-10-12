@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
+    android:layout_width="fill_parent"
     android:layout_height="wrap_content"
     android:background="@color/white"
     android:gravity="top" >
@@ -8,10 +8,9 @@
     <LinearLayout
         android:id="@+id/linearLayout1"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
-        android:layout_weight="5" 
         android:orientation="vertical" >
 
         <LinearLayout
@@ -20,56 +19,67 @@
             android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"
             android:layout_alignParentTop="true"
-            android:layout_weight="1" 
-            android:orientation="horizontal">
+            android:layout_weight="0"
+            android:orientation="horizontal" >
 
             <TextView
-                android:id="@+id/TextView01"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentLeft="true"
-                android:layout_alignParentTop="true"
-                android:text="資料庫" />
-
-            <EditText
-                android:id="@+id/sig_eTxtDbName"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ems="10"
-                android:text="location.sqlite" />
-
-            <TextView
-                android:id="@+id/textView1"
+                android:id="@+id/sig_tViwID"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignBottom="@+id/linearLayout1"
-                android:layout_marginLeft="20dp"
+                android:layout_marginLeft="10dp"
+                android:layout_toRightOf="@+id/checkBox1"
+                android:text="ID" />
+
+            <EditText
+                android:id="@+id/sig_eTxtID"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0" />
+
+            <TextView
+                android:id="@+id/sig_tViwDetectTimes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignBottom="@+id/linearLayout1"
+                android:layout_marginLeft="10dp"
                 android:layout_toRightOf="@+id/checkBox1"
                 android:text="偵測次數" />
 
             <EditText
                 android:id="@+id/sig_eTxtDetectTimes"
-                android:layout_width="73dp"
-                android:layout_height="wrap_content"
-                android:ems="10"
-                android:text="0" />
-
-            <requestFocus />
-
-            <CheckBox
-                android:id="@+id/checkBox1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="卡爾曼濾波" />
+                android:layout_marginLeft="10dp"
+                android:text="0" />
+
+             <CheckBox
+                android:id="@+id/sig_cBoxDB"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                 android:checked="true"
+                android:text="DB" />
+
+            <CheckBox
+                android:id="@+id/sig_cBoxKalman"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="kalman" />
+            
+            <CheckBox
+                android:id="@+id/sig_cBoxWinAvg"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="winAvg" />
+            
 
             <Button
                 android:id="@+id/sig_btnStart"
                 style="?android:attr/buttonStyleSmall"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
                 android:layout_marginLeft="20dp"
-                android:layout_toRightOf="@+id/linearLayout1"
                 android:text="啟動" />
         </LinearLayout>
 
@@ -79,14 +89,15 @@
             android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"
             android:layout_alignParentTop="true"
-            android:layout_weight="1" 
-            android:orientation="horizontal">
-
+            android:layout_weight="0"
+            android:orientation="horizontal" >
 
             <TextView
                 android:id="@+id/sig_tViwCurrentMAC"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentTop="true"
                 android:layout_marginRight="10dp"
                 android:text="MAC = 00:00:00:00:00:00" />
 
@@ -96,14 +107,13 @@
                 android:layout_height="wrap_content"
                 android:text="RSSI = 0" />
         </LinearLayout>
-        
-         <LinearLayout
-            android:id="@+id/linearLayout4"
+
+        <LinearLayout
+            android:id="@+id/sig_lLayChart"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
-            android:orientation="vertical" 
-            android:layout_weight="3" >
-            
+            android:layout_weight="10"
+            android:orientation="vertical" >
         </LinearLayout>
     </LinearLayout>
 

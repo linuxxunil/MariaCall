@@ -27,17 +27,21 @@ import android.os.Handler;
 import android.os.Message;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class SignalDetectionActivity extends ControllerActivity {
-
+	/* UI */
 	private Button	btnStart = null;
-	private EditText eTxtDbName = null;
 	private EditText eTxtDetectTimes = null;
+	private EditText eTxtID = null;
 	private TextView tViwCurrentRSSI = null;
 	private TextView tViwCurrentMAC = null;
+	private CheckBox cBoxDB = null;
+	private CheckBox cBoxWinAvg = null;
+	private CheckBox cBoxKalman = null;
 	private DatabaseDriver db = null;
 	private boolean flgStart = false;
 	
@@ -51,13 +55,18 @@ public class SignalDetectionActivity extends ControllerActivity {
     private GraphicalView chart;  
     private XYMultipleSeriesRenderer renderer;  
     private Context context; 
-    private LinkedList<Integer> yList = new LinkedList<Integer>();
+    private LinkedList<Double> yList = new LinkedList<Double>();
    
     private int nowTimes = 0;  
     private int maxTimes = -1;	
     
     /* bluetooth */
     private Beacon beacon = null;
+    
+    /* algorithm */
+    private final int maxWinAvg = 10; 
+    private double[] winAvg ;
+    private Kalman kalman = null;
     
     /* Initial */
 	@Override
@@ -72,17 +81,26 @@ public class SignalDetectionActivity extends ControllerActivity {
 		
 		initDatabase();
 		
+		initAlgorithm();
+		
 		if ( beacon == null )
 			beacon = new Beacon(context);
 	}
 	
+	private void initAlgorithm() {
+		// initial windows average
+		winAvg = new double[maxWinAvg];
+		
+		// initial kalman
+		kalman = new Kalman(0,0,0,0);
+	}
 	private void initLayout() {
 		setContentView(R.layout.layout_signal_detection);
 
 		context = getApplicationContext();  
 		
 		//這裏獲得main界面上的布局，下面會把圖表畫在這個布局裏面  
-        LinearLayout layout = (LinearLayout)findViewById(R.id.linearLayout4);  
+        LinearLayout layout = (LinearLayout)findViewById(R.id.sig_lLayChart);  
         
         //這個類用來放置曲線上的所有點，是一個點的集合，根據這些點畫出曲線  
         series = new XYSeries(title);  
@@ -123,12 +141,14 @@ public class SignalDetectionActivity extends ControllerActivity {
 	}
 		
 	private void initListeners() {
-		btnStart = (Button) findViewById(R.id.sig_btnStart);
-		eTxtDbName = (EditText) findViewById(R.id.sig_eTxtDbName);
+		btnStart 		= (Button) findViewById(R.id.sig_btnStart);
 		eTxtDetectTimes = (EditText) findViewById(R.id.sig_eTxtDetectTimes);
+		eTxtID			= (EditText) findViewById(R.id.sig_eTxtID);
 		tViwCurrentRSSI = (TextView) findViewById(R.id.sig_tViwCurrentRSSI);
-		tViwCurrentMAC = (TextView) findViewById(R.id.sig_tViwCurrentMAC);
-		
+		tViwCurrentMAC 	= (TextView) findViewById(R.id.sig_tViwCurrentMAC);
+		cBoxDB			= (CheckBox) findViewById(R.id.sig_cBoxDB);
+		cBoxKalman		= (CheckBox) findViewById(R.id.sig_cBoxKalman);
+		cBoxWinAvg		= (CheckBox) findViewById(R.id.sig_cBoxWinAvg);
 		
 		btnStart.setOnClickListener(new Button.OnClickListener() {
 			@Override
@@ -137,22 +157,19 @@ public class SignalDetectionActivity extends ControllerActivity {
 					// set detect times
 					maxTimes = Integer.valueOf(
 								eTxtDetectTimes.getText().toString());
-					btnStart.setText("關閉");
 					
+					btnStart.setText("關閉");
 					// open db
 					db.onConnect();
-					
 					// location start
 					locationStart();
-
 				} else {
 					// reset detect times
 					maxTimes = -1;
-					
+
 					btnStart.setText("啟動");
 					// location start
 					locationStop();
-					
 					// close db
 					db.close();
 				}
@@ -162,7 +179,7 @@ public class SignalDetectionActivity extends ControllerActivity {
 	}
 	
 	private void initDatabase() {
-		db = new SqliteDriver(dbPath + eTxtDbName.getText().toString());
+		db = new SqliteDriver(dbPath);
 		db.onConnect();
 		db.createTable(DatabaseTable.Ibeacon.create());
 		db.close();
@@ -180,17 +197,22 @@ public class SignalDetectionActivity extends ControllerActivity {
 		}
 	}
 	
-	private void insertBeaconInfo(int deviceID, String deviceMAC, int rssi, double distance) {
+	private void insertBeaconInfo(int deviceID, String deviceMAC, double rssi, double distance,
+				boolean winAvg, boolean kalman) {
 		String sql = "INSERT INTO " + DatabaseTable.Ibeacon.name
-				+ "(\"" + DatabaseTable.Ibeacon.colDeviceID	+ "\","
+				+ "(\"" + DatabaseTable.Ibeacon.colDeviceID		+ "\","
 				+ "	\"" + DatabaseTable.Ibeacon.colDeviceMAC	+ "\","
-				+ " \"" + DatabaseTable.Ibeacon.colRSSI		+ "\","
-				+ " \"" + DatabaseTable.Ibeacon.colDistance 	+ "\")"
+				+ " \"" + DatabaseTable.Ibeacon.colRSSI			+ "\","
+				+ " \"" + DatabaseTable.Ibeacon.colDistance 	+ "\","
+				+ " \"" + DatabaseTable.Ibeacon.colWinAvg 		+ "\","
+				+ " \"" + DatabaseTable.Ibeacon.colKalman	 	+ "\")"
 				+ " VALUES "
-				+ "(\"" + deviceID	+ "\","
-				+ "	\"" + deviceMAC	+ "\","
-				+ " \"" + rssi 		+ "\","
-				+ " \"" + distance 	+ "\")";
+				+ "(\"" + deviceID		+ "\","
+				+ "	\"" + deviceMAC		+ "\","
+				+ " \"" + rssi 			+ "\","
+				+ " \"" + distance 		+ "\","
+				+ " \"" + (winAvg?1:0)	+ "\","
+				+ " \"" + (kalman?1:0) 	+ "\")";
 		db.insert(sql);
 	}
 	
@@ -215,34 +237,54 @@ public class SignalDetectionActivity extends ControllerActivity {
 	}
 
 	private void locationStartResult(Message msg) {
-		int rssi = msg.getData().getInt("rssi");
-		String mac = msg.getData().getString("mac");
+		double rssi	= (double)msg.getData().getInt("rssi");
+		String mac 	= msg.getData().getString("mac");
+		int id 		= Integer.valueOf(eTxtID.getText().toString());
+		
+		if ( cBoxWinAvg.isChecked() )
+			rssi = exeWinAvg(rssi);
+		if ( cBoxKalman.isChecked() )
+			rssi = exeKalman(rssi);
+		
+		if ( cBoxDB.isChecked() ) {
+			insertBeaconInfo(id, mac, rssi, 0.0,
+					cBoxWinAvg.isChecked(),cBoxKalman.isChecked() );
+		}
 		
 		// update activity
 		tViwCurrentMAC.setText("MAC = " + mac);
 		tViwCurrentRSSI.setText("RSSI = " + rssi);
 		updateChart(rssi);
 		
-		
-		// insert info to db
-		insertBeaconInfo(0, mac, rssi, 0.0);
-		
 		if ( maxTimes == 0 )
 			return ;
 		else if ( nowTimes >= maxTimes )
 			btnStart.callOnClick();
-		/*		
+	}
+	
+	private double exeKalman(double rssi) {
 		kalman.correct(rssi);
 		kalman.predict();
 		kalman.update();
-		
-		//float distance = 10
-		System.out.println(Beacon.convertToDistance(kalman.getStateEstimation()));
-		
-		//insertBeaconInfo(mac,rssi,Beacon.convertToDistance(rssi));
-		tViwRSSI.setText(mac + " "+  Beacon.convertToDistance(kalman.getStateEstimation()) + " " + " " + i++);
-		*/
+		return kalman.getStateEstimation();
 	}
+
+	private double exeWinAvg(double rssi) {
+		double sum = 0;
+		
+		if ( winAvg[maxWinAvg-1] == 0 ) {
+			for (int i=0; i<maxWinAvg; i++)
+				winAvg[i] = rssi;
+		}
+		
+		winAvg[nowTimes%maxWinAvg] = rssi;
+	
+		for(int i=0; i<maxWinAvg; i++) {
+			sum += winAvg[i];
+		}
+		return (sum / (double)maxWinAvg);
+	}
+
 	
 	/* Chart */
 	private XYMultipleSeriesRenderer buildRenderer(int color, PointStyle style, boolean fill) {  
@@ -282,7 +324,7 @@ public class SignalDetectionActivity extends ControllerActivity {
         //renderer.setZoomEnabled(false);
     }  
       
-    private void updateChart(int rssi) {  
+    private void updateChart(double rssi) {  
              
         //移除數據集中舊的點集  
         mDataset.removeSeries(series);  
@@ -303,6 +345,5 @@ public class SignalDetectionActivity extends ControllerActivity {
         chart.invalidate();  
         
         nowTimes++;
-    }  
-	
+    }  	
 }
