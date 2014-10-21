@@ -6,8 +6,8 @@ public class Kalman {
 	private double K;
 	private double X;
 	private double P;
-	private double Q;
-	private double R;
+	private double Q = 0.01;
+	private double R = 0.01;
 	private double Z;
 	
 	public Kalman(double X, double P,double Q, double R) {
@@ -27,6 +27,7 @@ public class Kalman {
 	{
 		X_ = X;
 		P_ = P + Q;
+		System.out.println("P_ = " + P_);
 	}
 	
 	public void update()

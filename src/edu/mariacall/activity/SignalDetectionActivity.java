@@ -1,6 +1,7 @@
 package edu.mariacall.activity;
 
 import java.util.LinkedList;
+import java.util.List;
 
 import org.achartengine.ChartFactory;
 import org.achartengine.GraphicalView;
@@ -16,7 +17,9 @@ import edu.mariacall.database.DatabaseDriver;
 import edu.mariacall.database.DatabaseTable;
 import edu.mariacall.database.SqliteDriver;
 import edu.mariacall.location.Beacon;
+import android.app.AlertDialog;
 import android.app.ActionBar.LayoutParams;
+import android.app.AlertDialog.Builder;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothAdapter.LeScanCallback;
 import android.content.Context;
@@ -35,6 +38,7 @@ import android.widget.TextView;
 public class SignalDetectionActivity extends ControllerActivity {
 	/* UI */
 	private Button	btnStart = null;
+	private EditText eTxtQuantity = null;
 	private EditText eTxtDetectTimes = null;
 	private EditText eTxtID = null;
 	private TextView tViwCurrentRSSI = null;
@@ -43,22 +47,33 @@ public class SignalDetectionActivity extends ControllerActivity {
 	private CheckBox cBoxWinAvg = null;
 	private CheckBox cBoxKalman = null;
 	private DatabaseDriver db = null;
+	LinearLayout lLayChart = null;  
 	private boolean flgStart = false;
 	
     /* Definition  Handler tag */
     private final static int TAG_LOCATION_START = 1;
-    
+   
     /* Using draw chart */
+    // dataSet definition
+    private int dataSetLen = -1;
+    private int maxTimes = 0;	
+    private String[] dataSetName = { "Beacon1", "Beacon2", "Beacon3","Beacon4"};
+    private int[] dataSetColors = { Color.BLUE, Color.GREEN, Color.rgb(0xFF, 0xA5, 0x00), Color.RED};
+    private PointStyle[] dataSetStyles = { PointStyle.CIRCLE, PointStyle.CIRCLE,
+    											PointStyle.CIRCLE,PointStyle.CIRCLE };
+    private LinkedList[] dataSetLists;
+    private String[] macSet;
+    
+    // background definition
     private String title = "Signal Strength";  
-    private XYSeries series;  
+    private XYSeries[] series;  
     private XYMultipleSeriesDataset mDataset;  
     private GraphicalView chart;  
     private XYMultipleSeriesRenderer renderer;  
     private Context context; 
-    private LinkedList<Double> yList = new LinkedList<Double>();
    
-    private int nowTimes = 0;  
-    private int maxTimes = -1;	
+   
+    
     
     /* bluetooth */
     private Beacon beacon = null;
@@ -77,6 +92,8 @@ public class SignalDetectionActivity extends ControllerActivity {
 		
 		initListeners();
 		
+		initChart();
+		
 		initHandler();
 		
 		initDatabase();
@@ -92,30 +109,60 @@ public class SignalDetectionActivity extends ControllerActivity {
 		winAvg = new double[maxWinAvg];
 		
 		// initial kalman
-		kalman = new Kalman(0,0,0,0);
+		kalman = new Kalman(-59, 0.1, 0.1, 0.1);
 	}
 	private void initLayout() {
 		setContentView(R.layout.layout_signal_detection);
-
-		context = getApplicationContext();  
+	}
+	private void resetChart() {
+		int tmp;
+		maxTimes = Integer.valueOf(
+						eTxtDetectTimes.getText().toString());
 		
-		//這裏獲得main界面上的布局，下面會把圖表畫在這個布局裏面  
-        LinearLayout layout = (LinearLayout)findViewById(R.id.sig_lLayChart);  
+        tmp = Integer.valueOf(eTxtQuantity.getText().toString());
+        if ( dataSetLen != tmp ) {
+        	dataSetLen = tmp;
+        	setChart();
+        } else {
+        	for (int i=0; i<dataSetLists.length; i++) {
+        			dataSetLists[i].clear();
+        	}
+        }
+	}
+	
+	private void initChart() {
+		maxTimes = Integer.valueOf(
+				eTxtDetectTimes.getText().toString());
+        dataSetLen = Integer.valueOf(eTxtQuantity.getText().toString());
+        setChart();
+	}
+	
+	private void setChart() {
+		context = getApplicationContext();  
+	
+        macSet = new String[dataSetLen];
+        for (int i=0; i<dataSetLen; i++) 
+        	macSet[i] = new String();
         
-        //這個類用來放置曲線上的所有點，是一個點的集合，根據這些點畫出曲線  
-        series = new XYSeries(title);  
-          
+        dataSetLists = new LinkedList[dataSetLen];
+        for (int i=0; i<dataSetLen; i++) 
+        	dataSetLists[i] = new LinkedList<Double>();
+        
+        series = new XYSeries[dataSetLen];
+        for (int i=0; i<dataSetLen; i++)
+        	series[i] = new XYSeries(dataSetName[i]);
+        
+        
         //創建一個數據集的實例，這個數據集將被用來創建圖表  
-        mDataset = new XYMultipleSeriesDataset();  
-          
+        mDataset = new XYMultipleSeriesDataset();
+
         //將點集添加到這個數據集中  
-        mDataset.addSeries(series);  
-          
-        //以下都是曲線的樣式和屬性等等的設置，renderer相當於一個用來給圖表做渲染的句柄  
-        int color = Color.GREEN;  
-        PointStyle style = PointStyle.CIRCLE;  
-        renderer = buildRenderer(color, style, true);  
-          
+        for ( int i=0; i<dataSetLen; i++)
+        	mDataset.addSeries(series[i]);
+        
+        //以下都是曲線的樣式和屬性等等的設置，renderer相當於一個用來給圖表做渲染的句柄
+        renderer = buildRenderer(dataSetColors, dataSetStyles, true);
+              
         //設置好圖表的樣式
         setChartSettings(renderer);  
           
@@ -123,8 +170,8 @@ public class SignalDetectionActivity extends ControllerActivity {
         chart = ChartFactory.getLineChartView(context, mDataset, renderer);  
           
         //將圖表添加到布局中去   
-        layout.addView(chart, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-        
+        lLayChart.removeAllViews();
+        lLayChart.addView(chart, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 	}
 	
 	private void initHandler() {
@@ -142,6 +189,7 @@ public class SignalDetectionActivity extends ControllerActivity {
 		
 	private void initListeners() {
 		btnStart 		= (Button) findViewById(R.id.sig_btnStart);
+		eTxtQuantity	= (EditText) findViewById(R.id.sig_eTxtQuantity);
 		eTxtDetectTimes = (EditText) findViewById(R.id.sig_eTxtDetectTimes);
 		eTxtID			= (EditText) findViewById(R.id.sig_eTxtID);
 		tViwCurrentRSSI = (TextView) findViewById(R.id.sig_tViwCurrentRSSI);
@@ -149,27 +197,27 @@ public class SignalDetectionActivity extends ControllerActivity {
 		cBoxDB			= (CheckBox) findViewById(R.id.sig_cBoxDB);
 		cBoxKalman		= (CheckBox) findViewById(R.id.sig_cBoxKalman);
 		cBoxWinAvg		= (CheckBox) findViewById(R.id.sig_cBoxWinAvg);
+		lLayChart		= (LinearLayout)findViewById(R.id.sig_lLayChart);
 		
 		btnStart.setOnClickListener(new Button.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				if ( flgStart == false ) {
 					// set detect times
-					maxTimes = Integer.valueOf(
-								eTxtDetectTimes.getText().toString());
-					
 					btnStart.setText("關閉");
+		
+					resetChart();
 					// open db
 					db.onConnect();
 					// location start
 					locationStart();
 				} else {
 					// reset detect times
-					maxTimes = -1;
-
 					btnStart.setText("啟動");
 					// location start
 					locationStop();
+					
+					maxTimes = 0;
 					// close db
 					db.close();
 				}
@@ -235,31 +283,81 @@ public class SignalDetectionActivity extends ControllerActivity {
 			}
 		}); 
 	}
+	
+	private int matchMacSet(String mac) {
+		int match = -1;
+		for (int i=0; i<dataSetLen; i++) {
+    		if ( macSet[i].equals(mac)) {    			
+    			match = i;
+    			break;
+    		} else if ( macSet[i].equals("") ) {
+    			macSet[i] = mac;
+    			match = i;
+    			break;
+    		}
+    	}
+		return match;
+	}
 
+	private void checkFinish(LinkedList[] list) {
+		boolean finish = true;
+		
+		if ( maxTimes == 0 ) {
+			return ;
+		} else {
+			for(int i=0; i<list.length; i++) {
+				if ( list[i].size() < maxTimes ) {
+					finish = false;
+					break;
+				} 
+			}
+			if ( finish ) {
+				btnStart.callOnClick();
+				Builder alertDialog = new AlertDialog.Builder(
+						SignalDetectionActivity.this);
+				alertDialog.setTitle("提示");
+				alertDialog.setMessage("測試完成");
+				alertDialog.setPositiveButton("確定",null);
+				alertDialog.show();
+			}
+			
+		}
+	}
+	
 	private void locationStartResult(Message msg) {
 		double rssi	= (double)msg.getData().getInt("rssi");
 		String mac 	= msg.getData().getString("mac");
 		int id 		= Integer.valueOf(eTxtID.getText().toString());
+
+		int match = matchMacSet(mac);
 		
-		if ( cBoxWinAvg.isChecked() )
-			rssi = exeWinAvg(rssi);
-		if ( cBoxKalman.isChecked() )
-			rssi = exeKalman(rssi);
-		
-		if ( cBoxDB.isChecked() ) {
-			insertBeaconInfo(id, mac, rssi, 0.0,
+    	if ( match == -1) {
+    		return ;
+    	} else {
+			if ( cBoxWinAvg.isChecked() )
+				rssi = exeWinAvg(rssi,dataSetLists[match].size());
+			if ( cBoxKalman.isChecked() )
+				rssi = exeKalman(rssi);
+			
+			// inset to database
+			if ( cBoxDB.isChecked() ) {
+				insertBeaconInfo(id, mac, rssi, 0.0,
 					cBoxWinAvg.isChecked(),cBoxKalman.isChecked() );
+			}
+		
+			// update activity
+			tViwCurrentMAC.setText("MAC = " + mac);
+			tViwCurrentRSSI.setText("RSSI = " + rssi);
+			
+			// add rssi to list
+			dataSetLists[match].add(rssi);
+			
+			// update chart
+			updateChart(dataSetLists);
+			
+			// check finish
+			checkFinish(dataSetLists);
 		}
-		
-		// update activity
-		tViwCurrentMAC.setText("MAC = " + mac);
-		tViwCurrentRSSI.setText("RSSI = " + rssi);
-		updateChart(rssi);
-		
-		if ( maxTimes == 0 )
-			return ;
-		else if ( nowTimes >= maxTimes )
-			btnStart.callOnClick();
 	}
 	
 	private double exeKalman(double rssi) {
@@ -269,7 +367,7 @@ public class SignalDetectionActivity extends ControllerActivity {
 		return kalman.getStateEstimation();
 	}
 
-	private double exeWinAvg(double rssi) {
+	private double exeWinAvg(double rssi,int exeCount) {
 		double sum = 0;
 		
 		if ( winAvg[maxWinAvg-1] == 0 ) {
@@ -277,7 +375,7 @@ public class SignalDetectionActivity extends ControllerActivity {
 				winAvg[i] = rssi;
 		}
 		
-		winAvg[nowTimes%maxWinAvg] = rssi;
+		winAvg[exeCount%maxWinAvg] = rssi;
 	
 		for(int i=0; i<maxWinAvg; i++) {
 			sum += winAvg[i];
@@ -285,22 +383,20 @@ public class SignalDetectionActivity extends ControllerActivity {
 		return (sum / (double)maxWinAvg);
 	}
 
-	
 	/* Chart */
-	private XYMultipleSeriesRenderer buildRenderer(int color, PointStyle style, boolean fill) {  
-        XYMultipleSeriesRenderer renderer = new XYMultipleSeriesRenderer();  
-          
-        //設置圖表中曲線本身的樣式，包括顏色、點的大小以及線的粗細等  
-        XYSeriesRenderer r = new XYSeriesRenderer();  
-        r.setColor(color);  
-        r.setPointStyle(style);  
-        r.setFillPoints(fill);  
-        r.setLineWidth(3);  
-        renderer.addSeriesRenderer(r);  
-          
-        return renderer;  
-    }  
-      
+    private XYMultipleSeriesRenderer buildRenderer(int[] colors, PointStyle[] styles, boolean fill) {
+        XYMultipleSeriesRenderer renderer = new XYMultipleSeriesRenderer();
+        
+        for (int i = 0; i < dataSetLen; i++) {
+            XYSeriesRenderer r = new XYSeriesRenderer();
+            r.setColor(colors[i]);
+            r.setPointStyle(styles[i]);
+            r.setFillPoints(fill);
+            renderer.addSeriesRenderer(r); //將座標變成線加入圖中顯示
+        }
+        return renderer;
+    }
+
     private void setChartSettings(XYMultipleSeriesRenderer renderer) {  
         //有關對圖表的渲染可參看api文檔  
     	
@@ -312,7 +408,7 @@ public class SignalDetectionActivity extends ControllerActivity {
         renderer.setAxesColor(Color.WHITE);  
         renderer.setLabelsColor(Color.WHITE);  
         renderer.setShowGrid(true);  
-        renderer.setGridColor(Color.BLUE);  
+        renderer.setGridColor(Color.LTGRAY);  
         renderer.setXLabels(20);  
         renderer.setYLabels(20);  
         renderer.setXTitle("Time");  
@@ -323,27 +419,29 @@ public class SignalDetectionActivity extends ControllerActivity {
         //renderer.setPanEnabled(false);
         //renderer.setZoomEnabled(false);
     }  
-      
-    private void updateChart(double rssi) {  
-             
+    
+    
+    private void updateChart(LinkedList[] list) {
         //移除數據集中舊的點集  
-        mDataset.removeSeries(series);  
-        
-        yList.add(rssi);
-         
+    	for (int i=0; i<dataSetLen; i++)
+    		mDataset.removeSeries(series[i]);  
+    	
         //點集先清空，為了做成新的點集而准備  
-        series.clear();  
+        for (int i=0; i<dataSetLen; i++)
+        	series[i].clear();
         
-        for (int k = 0; k < nowTimes; k++) {  
-            series.add(k, yList.get(k));  
-        }  
+        for (int i=0; i<dataSetLen; i++) {
+        	for (int k = 0; k < list[i].size(); k++) {  
+        		series[i].add(k, (double)list[i].get(k));
+        		System.out.println("i["+i+"]:"+list[i].size());
+        	}
+        }
        
         //在數據集中添加新的點集  
-        mDataset.addSeries(series);  
+        for (int i=0; i<dataSetLen; i++)
+        	 mDataset.addSeries(series[i]);
          
         // update chart
         chart.invalidate();  
-        
-        nowTimes++;
     }  	
 }

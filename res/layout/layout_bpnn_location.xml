@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/white"
+    android:gravity="top" >
+
+    <LinearLayout
+        android:id="@+id/bpn_linearLayout1"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:orientation="vertical" >
+
+        <LinearLayout
+            android:id="@+id/bpn_linearLayout2"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0"
+            android:orientation="horizontal" >
+
+            <TextView
+                android:id="@+id/bpn_tViwID"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignBottom="@+id/bpn_linearLayout1"
+                android:layout_marginLeft="10dp"
+                android:layout_toRightOf="@+id/checkBox1"
+                android:text="AreaID" />
+
+            <EditText
+                android:id="@+id/bpn_eTxtID"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0" >
+
+                <requestFocus />
+            </EditText>
+
+            <TextView
+                android:id="@+id/bpn_tViwDetectTimes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignBottom="@+id/linearLayout1"
+                android:layout_marginLeft="10dp"
+                android:layout_toRightOf="@+id/checkBox1"
+                android:text="偵測次數" />
+
+            <EditText
+                android:id="@+id/bpn_eTxtDetectTimes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:text="0" />
+
+            <CheckBox
+                android:id="@+id/bpn_cBoxDB"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="DB" />
+
+            <CheckBox
+                android:id="@+id/bpn_cBoxKalman"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="kalman" />
+
+            <CheckBox
+                android:id="@+id/bpn_cBoxWinAvg"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="winAvg" />
+
+            <Button
+                android:id="@+id/bpn_btnStart"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="20dp"
+                android:text="啟動" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/bpn_linearLayout3"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:layout_weight="0"
+            android:orientation="horizontal" >
+
+            <TextView
+                android:id="@+id/bpn_tViwCurrentMAC0"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentTop="true"
+                android:layout_marginRight="10dp"
+                android:text="MAC[0] = 00:00:00:00:00:00" />
+
+            <TextView
+                android:id="@+id/bpn_tViwCurrentRSSI0"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="RSSI = 0" />
+        </LinearLayout>
+
+
+    </LinearLayout>
+
+</RelativeLayout>
