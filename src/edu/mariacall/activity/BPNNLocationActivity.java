@@ -1,5 +1,11 @@
 package edu.mariacall.activity;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Hashtable;
 import java.util.LinkedList;
 
 import org.achartengine.ChartFactory;
@@ -10,125 +16,236 @@ import org.achartengine.model.XYSeries;
 import org.achartengine.renderer.XYMultipleSeriesRenderer;
 import org.achartengine.renderer.XYSeriesRenderer;
 
-import android.app.AlertDialog;
-import android.app.ActionBar.LayoutParams;
-import android.app.AlertDialog.Builder;
+import alg.common.Log;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothAdapter.LeScanCallback;
 import android.content.Context;
-import android.graphics.Color;
-import android.graphics.Paint.Align;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import edu.mariacall.R;
 import edu.mariacall.algorithm.Kalman;
+import edu.mariacall.algorithm.BPNN;
 import edu.mariacall.database.DatabaseDriver;
 import edu.mariacall.database.DatabaseTable;
+import edu.mariacall.database.MsResultSet;
 import edu.mariacall.database.SqliteDriver;
 import edu.mariacall.location.Beacon;
 
+class LocationBPNN extends BPNN {
+	DatabaseDriver db = null;
+	ResultSet[] rs;
+	double yMax, yMin;
+	double dMax = 0.5, dMin = -0.5;
+
+	String[] macSet = { "D0:39:72:D9:FA:2A", "D0:39:72:D9:FA:65",
+			"D0:39:72:D9:FE:D6" };
+
+	public LocationBPNN() {
+		super();
+	}
+
+	public LocationBPNN(int nCount, int nLearnDSet, int nInput, int nHidden,
+			int nOutput, float eta, float alpha) {
+		super(nCount, nLearnDSet, nInput, nHidden, nOutput, eta, alpha);
+	}
+
+	public LocationBPNN(int nCount, int nLearnDSet,
+			LinkedList<float[][]> weight, LinkedList<float[]> theta, float eta,
+			float aplpha) {
+		super(nCount, nLearnDSet, weight, theta, eta, aplpha);
+	}
+
+	public float convert(float y) {
+		return (float) ((((y - yMin) * (dMax - dMin) / (yMax - yMin))) + dMin);
+	}
+	
+	public void initYminYmax(int type) {
+		String path = "";
+		switch(type) {
+		case 0: path = "/sdcard/data/mariacall/location.sqlite_00";
+		case 1:	path = "/sdcard/data/mariacall/location.sqlite_01"; //kalman
+		case 2: path = "/sdcard/data/mariacall/location.sqlite_02";
+		case 3: path = "/sdcard/data/mariacall/location.sqlite_03";
+		}
+		
+		DatabaseDriver db = new SqliteDriver(path);
+		db.onConnect();
+		rs = new ResultSet[nInput];
+		
+		try {
+			MsResultSet ms = db.select("SELECT MIN(rssi) FROM Ibeacon");
+			if ( ms.rs.next() )  {
+				yMax = ms.rs.getDouble(1);
+			}
+			ms = db.select("SELECT MAX(rssi) FROM Ibeacon");
+			if ( ms.rs.next() )  {
+				yMin = ms.rs.getDouble(1);
+			}
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+		}
+		db.close();
+	}
+}
+
 public class BPNNLocationActivity extends ControllerActivity {
 	/* UI */
-	private Button	btnStart = null;
-	private EditText eTxtDetectTimes = null;
-	private EditText eTxtID = null;
-	private TextView tViwCurrentRSSI = null;
-	private TextView tViwCurrentMAC = null;
-	private CheckBox cBoxDB = null;
+	private Button btnStart = null;
 	private CheckBox cBoxWinAvg = null;
 	private CheckBox cBoxKalman = null;
+	private CheckBox cBoxWinAvgParm = null;
+	private CheckBox cBoxKalmanParm = null;
+	private TextView tViwAreaID = null;
 	private DatabaseDriver db = null;
 	private boolean flgStart = false;
-	
-    /* Definition  Handler tag */
-    private final static int TAG_LOCATION_START = 1;
-    
-    /* Using draw chart */
-    private String title = "Signal Strength";  
-    private XYSeries series;  
-    private XYMultipleSeriesDataset mDataset;  
-    private GraphicalView chart;  
-    private XYMultipleSeriesRenderer renderer;  
-    private Context context; 
-    private LinkedList<Double> yList = new LinkedList<Double>();
-   
-    private int nowTimes = 0;  
-    private int maxTimes = -1;	
-    
-    /* bluetooth */
-    private Beacon beacon = null;
-    
-    /* algorithm */
-    private final int maxWinAvg = 10; 
-    private double[] winAvg ;
-    private Kalman kalman = null;
-    
-    /* Initial */
+	private Context context;
+	/* Definition Handler tag */
+	private final static int TAG_LOCATION_START = 1;
+
+	/* bluetooth */
+	private Beacon beacon = null;
+
+	/* algorithm */
+	private final int maxWinAvg = 10;
+	private double[] winAvg;
+	private Kalman kalman = null;
+
+	private LocationBPNN bpnn = null;
+	private int nInput = 3;
+	private int nHidden = 8;
+	private int nOutput = 11;
+	private float[][] wXH, wHY;
+	private float[] thetaH, thetaY;
+	private float[] X = null;
+	private float[] Y = null;
+	private LinkedList<float[][]> wList = null;
+	private LinkedList<float[]> tList = null;
+	private Hashtable<String,Float> hash = null;
+	private String[] macSet;
+
+	/* Initial */
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		
+		context = getApplicationContext();
+
 		initLayout();
-		
+
 		initListeners();
-		
+
 		initHandler();
-		
-		initDatabase();
-		
+
+		// initDatabase();
+
 		initAlgorithm();
-		
-		if ( beacon == null )
+
+		if (beacon == null)
 			beacon = new Beacon(context);
 	}
-	
+
 	private void initAlgorithm() {
 		// initial windows average
 		winAvg = new double[maxWinAvg];
-		
+
 		// initial kalman
 		kalman = new Kalman(-59, 0.1, 0.1, 0.1);
-	}
-	private void initLayout() {
-		setContentView(R.layout.layout_signal_detection);
-
-		context = getApplicationContext();  
+		bpnn = new LocationBPNN();
+		X = new float[nInput];
+		macSet = new String[nInput];
+		wXH = new float[nInput][nHidden];
+		wHY = new float[nHidden][nOutput];
+		thetaH = new float[nHidden];
+		thetaY = new float[nOutput];
+		wList = new LinkedList<float[][]>();
+		tList = new	LinkedList<float[]>();
 		
-		//這裏獲得main界面上的布局，下面會把圖表畫在這個布局裏面  
-        LinearLayout layout = (LinearLayout)findViewById(R.id.sig_lLayChart);  
-        
-        //這個類用來放置曲線上的所有點，是一個點的集合，根據這些點畫出曲線  
-        series = new XYSeries(title);  
-          
-        //創建一個數據集的實例，這個數據集將被用來創建圖表  
-        mDataset = new XYMultipleSeriesDataset();  
-          
-        //將點集添加到這個數據集中  
-        mDataset.addSeries(series);  
-          
-        //以下都是曲線的樣式和屬性等等的設置，renderer相當於一個用來給圖表做渲染的句柄  
-        int color = Color.GREEN;  
-        PointStyle style = PointStyle.CIRCLE;  
-        renderer = buildRenderer(color, style, true);  
-          
-        //設置好圖表的樣式
-        setChartSettings(renderer);  
-          
-        //生成圖表  
-        chart = ChartFactory.getLineChartView(context, mDataset, renderer);  
-          
-        //將圖表添加到布局中去   
-        layout.addView(chart, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-        
+		for (int i=0; i<macSet.length; i++) 
+        	macSet[i] = new String("");
+	}
+
+	private void setParmToBPNN(String line) {
+
+		String[] item = line.split(";");
+		
+		int p = 0;
+		for (int i=0; i<wXH.length; i++) {
+			for (int j=0; j<wXH[i].length; j++) {
+				wXH[i][j] = Float.valueOf(item[p++].split("=")[1]);
+			}
+		}
+		
+		for (int i=0; i<wHY.length; i++) {
+			for (int j=0; j<wHY[i].length; j++) {
+				wHY[i][j] = Float.valueOf(item[p++].split("=")[1]);
+			}
+		}
+		
+		for (int i=0; i<thetaH.length; i++)
+			thetaH[i] = Float.valueOf(item[p++].split("=")[1]);
+		
+		for (int i=0; i<thetaY.length; i++)
+			thetaY[i] = Float.valueOf(item[p++].split("=")[1]);
+		
+		wList.clear();
+		tList.clear();
+		wList.add(wXH);
+		wList.add(wHY);
+		tList.add(thetaH);
+		tList.add(thetaY);
+		bpnn.reSetParmeter(1000, 50, wList, tList, 0.5f, 0.2f);
+		
 	}
 	
+	private int matchMacSet(String mac) {
+		int match = -1;
+		for (int i=0; i<macSet.length; i++) {
+    		if ( macSet[i].equals(mac)) {    			
+    			match = i;
+    			break;
+    		} else if ( macSet[i].equals("") ) {
+    			macSet[i] = mac;
+    			match = i;
+    			break;
+    		}
+    	}
+		return match;
+	}
+
+	private void setBpnnParm(int type) {
+		String path = "/sdcard/data/mariacall/none_wei.txt" ;
+		FileReader fr;
+		BufferedReader br;
+		String line;
+		bpnn.initYminYmax(type);
+		try {
+			switch (type) {
+			case 0: path = "/sdcard/data/mariacall/none_wei.txt"; break;
+			case 1: path = "/sdcard/data/mariacall/kalman_wei.txt";break;// kalman
+			case 2: path = "/sdcard/data/mariacall/winAvg_wei.txt";break;
+			case 3: path = "/sdcard/data/mariacall/hybrid_wei.txt";break;
+			}
+			fr = new FileReader(path);
+			br = new BufferedReader(fr);
+			line = br.readLine(); //讀第一行
+			setParmToBPNN(line);
+			br.close();
+			fr.close();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void initLayout() {
+		setContentView(R.layout.layout_bpnn_location);
+	}
+
 	private void initHandler() {
 		handler = new Handler() {
 			@Override
@@ -141,55 +258,54 @@ public class BPNNLocationActivity extends ControllerActivity {
 			}
 		};
 	}
-		
+
 	private void initListeners() {
-		btnStart 		= (Button) findViewById(R.id.sig_btnStart);
-		eTxtDetectTimes = (EditText) findViewById(R.id.sig_eTxtDetectTimes);
-		eTxtID			= (EditText) findViewById(R.id.sig_eTxtID);
-		tViwCurrentRSSI = (TextView) findViewById(R.id.sig_tViwCurrentRSSI);
-		tViwCurrentMAC 	= (TextView) findViewById(R.id.sig_tViwCurrentMAC);
-		cBoxDB			= (CheckBox) findViewById(R.id.sig_cBoxDB);
-		cBoxKalman		= (CheckBox) findViewById(R.id.sig_cBoxKalman);
-		cBoxWinAvg		= (CheckBox) findViewById(R.id.sig_cBoxWinAvg);
+		btnStart = (Button) findViewById(R.id.bpn_btnStart);
+		cBoxKalman = (CheckBox) findViewById(R.id.bpn_cBoxKalman);
+		cBoxWinAvg = (CheckBox) findViewById(R.id.bpn_cBoxWinAvg);
+		cBoxKalmanParm = (CheckBox) findViewById(R.id.bpn_cBoxKalmanParm);
+		cBoxWinAvgParm = (CheckBox) findViewById(R.id.bpn_cBoxWinAvgParm);
+		tViwAreaID = (TextView) findViewById(R.id.bpn_txtAreaID);
 		
+
 		btnStart.setOnClickListener(new Button.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				if ( flgStart == false ) {
-					// set detect times
-					maxTimes = Integer.valueOf(
-								eTxtDetectTimes.getText().toString());
-					
+				if (flgStart == false) {
 					btnStart.setText("關閉");
-					// open db
-					db.onConnect();
-					// location start
+					
+					if (cBoxWinAvgParm.isChecked() )
+						setBpnnParm(2);
+					else if (cBoxKalmanParm.isChecked() )
+						setBpnnParm(1);
+					else if (cBoxWinAvgParm.isChecked() 
+								&& cBoxKalmanParm.isChecked())
+						setBpnnParm(3);
+					else
+						setBpnnParm(0);
+					
 					locationStart();
 				} else {
-					// reset detect times
-					maxTimes = -1;
-					nowTimes = 0;  
-
 					btnStart.setText("啟動");
 					// location start
 					locationStop();
 					// close db
-					db.close();
+					// db.close();
 				}
 				flgStart ^= true;
 			}
 		});
 	}
-	
+
 	private void initDatabase() {
 		db = new SqliteDriver(dbPath);
 		db.onConnect();
 		db.createTable(DatabaseTable.Ibeacon.create());
 		db.close();
 	}
-	
-	private void sendMessage(int what, int statusCode, String mac ) {
-		if ( handler != null ) {
+
+	private void sendMessage(int what, int statusCode, String mac) {
+		if (handler != null) {
 			Message msg = handler.obtainMessage();
 			Bundle bundle = new Bundle();
 			bundle.putInt("rssi", statusCode);
@@ -199,79 +315,72 @@ public class BPNNLocationActivity extends ControllerActivity {
 			handler.sendMessage(msg);
 		}
 	}
-	
-	private void insertBeaconInfo(int deviceID, String deviceMAC, double rssi, double distance,
-				boolean winAvg, boolean kalman) {
-		String sql = "INSERT INTO " + DatabaseTable.Ibeacon.name
-				+ "(\"" + DatabaseTable.Ibeacon.colDeviceID		+ "\","
-				+ "	\"" + DatabaseTable.Ibeacon.colDeviceMAC	+ "\","
-				+ " \"" + DatabaseTable.Ibeacon.colRSSI			+ "\","
-				+ " \"" + DatabaseTable.Ibeacon.colDistance 	+ "\","
-				+ " \"" + DatabaseTable.Ibeacon.colWinAvg 		+ "\","
-				+ " \"" + DatabaseTable.Ibeacon.colKalman	 	+ "\")"
-				+ " VALUES "
-				+ "(\"" + deviceID		+ "\","
-				+ "	\"" + deviceMAC		+ "\","
-				+ " \"" + rssi 			+ "\","
-				+ " \"" + distance 		+ "\","
-				+ " \"" + (winAvg?1:0)	+ "\","
-				+ " \"" + (kalman?1:0) 	+ "\")";
+
+	private void insertBeaconInfo(int deviceID, String deviceMAC, double rssi,
+			double distance, boolean winAvg, boolean kalman) {
+		String sql = "INSERT INTO " + DatabaseTable.Ibeacon.name + "(\""
+				+ DatabaseTable.Ibeacon.colDeviceID + "\"," + "	\""
+				+ DatabaseTable.Ibeacon.colDeviceMAC + "\"," + " \""
+				+ DatabaseTable.Ibeacon.colRSSI + "\"," + " \""
+				+ DatabaseTable.Ibeacon.colDistance + "\"," + " \""
+				+ DatabaseTable.Ibeacon.colWinAvg + "\"," + " \""
+				+ DatabaseTable.Ibeacon.colKalman + "\")" + " VALUES " + "(\""
+				+ deviceID + "\"," + "	\"" + deviceMAC + "\"," + " \"" + rssi
+				+ "\"," + " \"" + distance + "\"," + " \"" + (winAvg ? 1 : 0)
+				+ "\"," + " \"" + (kalman ? 1 : 0) + "\")";
 		db.insert(sql);
 	}
-	
+
 	/* Location */
 	private void locationStart() {
-		
-		beacon.startLeScan(new LeScanCallback(){
+
+		beacon.startLeScan(new LeScanCallback() {
 			@Override
-			public void onLeScan(BluetoothDevice arg0, int rssi, byte[] scanRecord) {
+			public void onLeScan(BluetoothDevice arg0, int rssi,
+					byte[] scanRecord) {
 				sendMessage(TAG_LOCATION_START, rssi, arg0.toString());
 			}
-		}); 
+		});
 	}
-	
+
 	private void locationStop() {
-		
-		beacon.stopLeScan(new LeScanCallback(){
+
+		beacon.stopLeScan(new LeScanCallback() {
 			@Override
-			public void onLeScan(BluetoothDevice arg0, int rssi, byte[] scanRecord) {
+			public void onLeScan(BluetoothDevice arg0, int rssi,
+					byte[] scanRecord) {
 			}
-		}); 
+		});
 	}
 
 	private void locationStartResult(Message msg) {
-		double rssi	= (double)msg.getData().getInt("rssi");
-		String mac 	= msg.getData().getString("mac");
-		int id 		= Integer.valueOf(eTxtID.getText().toString());
+		double rssi = (double) msg.getData().getInt("rssi");
+		String mac = msg.getData().getString("mac");
+		int match = 0;
+		float max = 0.0f;
+		int id = 0;
 		
-		if ( cBoxWinAvg.isChecked() )
-			rssi = exeWinAvg(rssi);
-		if ( cBoxKalman.isChecked() )
+		
+		if (cBoxWinAvg.isChecked())
+			rssi = exeWinAvg(rssi, 1);
+		if (cBoxKalman.isChecked())
 			rssi = exeKalman(rssi);
+
 		
-		if ( cBoxDB.isChecked() ) {
-			insertBeaconInfo(id, mac, rssi, 0.0,
-					cBoxWinAvg.isChecked(),cBoxKalman.isChecked() );
+		match = matchMacSet(mac);
+		System.out.println(rssi);
+		X[match] = bpnn.convert((float) rssi);
+		System.out.println(X[match]);
+		Y = bpnn.predict(X);
+		for ( int i=0; i<Y.length; i++) {
+			if ( max < Y[i]) {
+				max = Y[i];
+				id = i;
+			}
 		}
-		
-		// update activity
-		tViwCurrentMAC.setText("MAC = " + mac);
-		tViwCurrentRSSI.setText("RSSI = " + rssi);
-		updateChart(rssi);
-		
-		if ( maxTimes == 0 )
-			return ;
-		else if ( nowTimes >= maxTimes ) {
-			btnStart.callOnClick();
-			Builder alertDialog = new AlertDialog.Builder(
-					BPNNLocationActivity.this);
-			alertDialog.setTitle("提示");
-			alertDialog.setMessage("測試完成");
-			alertDialog.setPositiveButton("確定",null);
-			alertDialog.show();
-		}
+		tViwAreaID.setText("AreaID="+id);
 	}
-	
+
 	private double exeKalman(double rssi) {
 		kalman.correct(rssi);
 		kalman.predict();
@@ -279,81 +388,26 @@ public class BPNNLocationActivity extends ControllerActivity {
 		return kalman.getStateEstimation();
 	}
 
-	private double exeWinAvg(double rssi) {
+	private double exeWinAvg(double rssi, int exeCount) {
 		double sum = 0;
-		
-		if ( winAvg[maxWinAvg-1] == 0 ) {
-			for (int i=0; i<maxWinAvg; i++)
+
+		if (winAvg[maxWinAvg - 1] == 0) {
+			for (int i = 0; i < maxWinAvg; i++)
 				winAvg[i] = rssi;
 		}
-		
-		winAvg[nowTimes%maxWinAvg] = rssi;
-	
-		for(int i=0; i<maxWinAvg; i++) {
+
+		winAvg[exeCount % maxWinAvg] = rssi;
+
+		for (int i = 0; i < maxWinAvg; i++) {
 			sum += winAvg[i];
 		}
-		return (sum / (double)maxWinAvg);
+		return (sum / (double) maxWinAvg);
 	}
 
-	
-	/* Chart */
-	private XYMultipleSeriesRenderer buildRenderer(int color, PointStyle style, boolean fill) {  
-        XYMultipleSeriesRenderer renderer = new XYMultipleSeriesRenderer();  
-          
-        //設置圖表中曲線本身的樣式，包括顏色、點的大小以及線的粗細等  
-        XYSeriesRenderer r = new XYSeriesRenderer();  
-        r.setColor(color);  
-        r.setPointStyle(style);  
-        r.setFillPoints(fill);  
-        r.setLineWidth(3);  
-        renderer.addSeriesRenderer(r);  
-          
-        return renderer;  
-    }  
-      
-    private void setChartSettings(XYMultipleSeriesRenderer renderer) {  
-        //有關對圖表的渲染可參看api文檔  
-    	
-        renderer.setChartTitle(title);
-        renderer.setXAxisMin(0);  
-        renderer.setXAxisMax(100);  
-        renderer.setYAxisMin(-20);  
-        renderer.setYAxisMax(-100);  
-        renderer.setAxesColor(Color.WHITE);  
-        renderer.setLabelsColor(Color.WHITE);  
-        renderer.setShowGrid(true);  
-        renderer.setGridColor(Color.BLUE);  
-        renderer.setXLabels(20);  
-        renderer.setYLabels(20);  
-        renderer.setXTitle("Time");  
-        renderer.setYTitle("dBm");  
-        renderer.setYLabelsAlign(Align.LEFT);  
-        renderer.setPointSize((float) 2);  
-        renderer.setShowLegend(false);
-        //renderer.setPanEnabled(false);
-        //renderer.setZoomEnabled(false);
-    }  
-      
-    private void updateChart(double rssi) {  
-             
-        //移除數據集中舊的點集  
-        mDataset.removeSeries(series);  
-        
-        yList.add(rssi);
-         
-        //點集先清空，為了做成新的點集而准備  
-        series.clear();  
-        
-        for (int k = 0; k < nowTimes; k++) {  
-            series.add(k, yList.get(k));  
-        }  
-       
-        //在數據集中添加新的點集  
-        mDataset.addSeries(series);  
-         
-        // update chart
-        chart.invalidate();  
-        
-        nowTimes++;
-    }  	
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		if (keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) {
+			changeActivity(BPNNLocationActivity.this, MenuActivity.class);
+		}
+		return true;
+	}
 }

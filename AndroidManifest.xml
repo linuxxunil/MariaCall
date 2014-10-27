@@ -25,22 +25,29 @@
         <activity
             android:name="edu.mariacall.activity.HomeActivity"
             android:label="@string/app_name" >
-  
         </activity>
         <activity
             android:name="edu.mariacall.activity.SignalDetectionActivity"
             android:label="@string/app_name"
-            android:screenOrientation="landscape"> 
-                <intent-filter>
+            android:screenOrientation="landscape" /> 
+               
+        <activity
+            android:name="edu.mariacall.activity.Map1FActivity"
+            android:label="@string/app_name" />
+
+        <activity
+            android:name="edu.mariacall.activity.BPNNLocationActivity"
+            android:label="@string/app_name" />
+        
+         <activity
+            android:name="edu.mariacall.activity.MenuActivity"
+            android:label="@string/app_name" >
+             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name="edu.mariacall.activity.Map1FActivity"
-            android:label="@string/app_name" />
-
     </application>
 
 </manifest>

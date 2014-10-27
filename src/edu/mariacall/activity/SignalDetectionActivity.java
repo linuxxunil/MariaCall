@@ -2,6 +2,7 @@ package edu.mariacall.activity;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 
 import org.achartengine.ChartFactory;
 import org.achartengine.GraphicalView;
@@ -20,6 +21,8 @@ import edu.mariacall.location.Beacon;
 import android.app.AlertDialog;
 import android.app.ActionBar.LayoutParams;
 import android.app.AlertDialog.Builder;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothAdapter.LeScanCallback;
 import android.content.Context;
@@ -28,6 +31,7 @@ import android.graphics.Paint.Align;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -80,13 +84,14 @@ public class SignalDetectionActivity extends ControllerActivity {
     
     /* algorithm */
     private final int maxWinAvg = 10; 
-    private double[] winAvg ;
-    private Kalman kalman = null;
+    private double[][] winAvg ;
+    private Kalman[] kalman = null;
     
     /* Initial */
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		context = getApplicationContext();  
 		
 		initLayout();
 		
@@ -106,23 +111,28 @@ public class SignalDetectionActivity extends ControllerActivity {
 	
 	private void initAlgorithm() {
 		// initial windows average
-		winAvg = new double[maxWinAvg];
+		
 		
 		// initial kalman
-		kalman = new Kalman(-59, 0.1, 0.1, 0.1);
+		//kalman = new Kalman(-59, 0.1, 0.1, 0.01);
 	}
 	private void initLayout() {
 		setContentView(R.layout.layout_signal_detection);
 	}
-	private void resetChart() {
+	
+	private void reset() {
 		int tmp;
 		maxTimes = Integer.valueOf(
 						eTxtDetectTimes.getText().toString());
 		
         tmp = Integer.valueOf(eTxtQuantity.getText().toString());
+        /* reset chart */
         if ( dataSetLen != tmp ) {
         	dataSetLen = tmp;
+        	System.out.println(dataSetLen);
         	setChart();
+        	setKalman();
+        	setWinAvg();
         } else {
         	for (int i=0; i<dataSetLists.length; i++) {
         			dataSetLists[i].clear();
@@ -130,16 +140,28 @@ public class SignalDetectionActivity extends ControllerActivity {
         }
 	}
 	
+	private void setWinAvg() {
+		winAvg = new double[dataSetLen][maxWinAvg];
+		for ( int i=0; i<kalman.length; i++)
+			winAvg[i] =  new double[maxWinAvg];
+	}
+	
+	private void setKalman() {
+		kalman = new Kalman[dataSetLen];
+		for ( int i=0; i<kalman.length; i++) 
+			kalman[i] =  new Kalman(-59, 0.1, 0.1, 0.01);
+	}
+	
 	private void initChart() {
 		maxTimes = Integer.valueOf(
 				eTxtDetectTimes.getText().toString());
         dataSetLen = Integer.valueOf(eTxtQuantity.getText().toString());
         setChart();
+        setKalman();
+        setWinAvg();
 	}
 	
 	private void setChart() {
-		context = getApplicationContext();  
-	
         macSet = new String[dataSetLen];
         for (int i=0; i<dataSetLen; i++) 
         	macSet[i] = new String();
@@ -205,8 +227,8 @@ public class SignalDetectionActivity extends ControllerActivity {
 				if ( flgStart == false ) {
 					// set detect times
 					btnStart.setText("關閉");
-		
-					resetChart();
+					
+					reset();
 					// open db
 					db.onConnect();
 					// location start
@@ -298,7 +320,8 @@ public class SignalDetectionActivity extends ControllerActivity {
     	}
 		return match;
 	}
-
+	
+	int testCase=0;
 	private void checkFinish(LinkedList[] list) {
 		boolean finish = true;
 		
@@ -311,16 +334,38 @@ public class SignalDetectionActivity extends ControllerActivity {
 					break;
 				} 
 			}
-			if ( finish ) {
-				btnStart.callOnClick();
-				Builder alertDialog = new AlertDialog.Builder(
-						SignalDetectionActivity.this);
-				alertDialog.setTitle("提示");
-				alertDialog.setMessage("測試完成");
-				alertDialog.setPositiveButton("確定",null);
-				alertDialog.show();
-			}
 			
+			if ( finish ) {
+				switch(testCase++) {
+				case 1:
+					for(int i=0; i<list.length; i++) list[i].clear();
+					cBoxWinAvg.setChecked(false);
+					cBoxKalman.setChecked(true);
+				break;
+				case 2:
+					for(int i=0; i<list.length; i++) list[i].clear();
+					cBoxWinAvg.setChecked(true);
+					cBoxKalman.setChecked(false);
+				break;
+				case 3:
+					for(int i=0; i<list.length; i++) list[i].clear();
+					cBoxWinAvg.setChecked(true);
+					cBoxKalman.setChecked(true);
+				break;
+				case 4:
+					cBoxWinAvg.setChecked(false);
+					cBoxKalman.setChecked(false);
+					testCase = 0;
+					btnStart.callOnClick();
+					Builder alertDialog = new AlertDialog.Builder(
+							SignalDetectionActivity.this);
+					alertDialog.setTitle("提示");
+					alertDialog.setMessage("測試完成");
+					alertDialog.setPositiveButton("確定",null);
+					alertDialog.show();
+				break;
+				}
+			}
 		}
 	}
 	
@@ -335,22 +380,26 @@ public class SignalDetectionActivity extends ControllerActivity {
     		return ;
     	} else {
 			if ( cBoxWinAvg.isChecked() )
-				rssi = exeWinAvg(rssi,dataSetLists[match].size());
+				rssi = exeWinAvg(match,rssi,dataSetLists[match].size());
 			if ( cBoxKalman.isChecked() )
-				rssi = exeKalman(rssi);
+				rssi = exeKalman(match,rssi);
 			
-			// inset to database
-			if ( cBoxDB.isChecked() ) {
-				insertBeaconInfo(id, mac, rssi, 0.0,
-					cBoxWinAvg.isChecked(),cBoxKalman.isChecked() );
+			
+			// add rssi to list
+			if ( dataSetLists[match].size() < maxTimes) {
+				dataSetLists[match].add(rssi);
+				// inset to database
+				if ( cBoxDB.isChecked() ) {
+					insertBeaconInfo(id, mac, rssi, 0.0,
+							cBoxWinAvg.isChecked(),cBoxKalman.isChecked() );
+				}
 			}
 		
 			// update activity
 			tViwCurrentMAC.setText("MAC = " + mac);
 			tViwCurrentRSSI.setText("RSSI = " + rssi);
 			
-			// add rssi to list
-			dataSetLists[match].add(rssi);
+			
 			
 			// update chart
 			updateChart(dataSetLists);
@@ -360,25 +409,25 @@ public class SignalDetectionActivity extends ControllerActivity {
 		}
 	}
 	
-	private double exeKalman(double rssi) {
-		kalman.correct(rssi);
-		kalman.predict();
-		kalman.update();
-		return kalman.getStateEstimation();
+	private double exeKalman(int p,double rssi) {
+		kalman[p].correct(rssi);
+		kalman[p].predict();
+		kalman[p].update();
+		return kalman[p].getStateEstimation();
 	}
 
-	private double exeWinAvg(double rssi,int exeCount) {
+	private double exeWinAvg(int p,double rssi,int exeCount) {
 		double sum = 0;
 		
-		if ( winAvg[maxWinAvg-1] == 0 ) {
+		if ( winAvg[p][maxWinAvg-1] == 0 ) {
 			for (int i=0; i<maxWinAvg; i++)
-				winAvg[i] = rssi;
+				winAvg[p][i] = rssi;
 		}
 		
-		winAvg[exeCount%maxWinAvg] = rssi;
+		winAvg[p][exeCount%maxWinAvg] = rssi;
 	
 		for(int i=0; i<maxWinAvg; i++) {
-			sum += winAvg[i];
+			sum += winAvg[p][i];
 		}
 		return (sum / (double)maxWinAvg);
 	}
@@ -433,7 +482,6 @@ public class SignalDetectionActivity extends ControllerActivity {
         for (int i=0; i<dataSetLen; i++) {
         	for (int k = 0; k < list[i].size(); k++) {  
         		series[i].add(k, (double)list[i].get(k));
-        		System.out.println("i["+i+"]:"+list[i].size());
         	}
         }
        
@@ -444,4 +492,22 @@ public class SignalDetectionActivity extends ControllerActivity {
         // update chart
         chart.invalidate();  
     }  	
+    
+    public static int PlaySound(final Context context) {  
+        NotificationManager mgr = (NotificationManager) context  
+                .getSystemService(Context.NOTIFICATION_SERVICE);  
+        Notification nt = new Notification();  
+        nt.defaults = Notification.DEFAULT_SOUND;  
+        int soundId = new Random(System.currentTimeMillis())  
+                .nextInt(Integer.MAX_VALUE);  
+        mgr.notify(soundId, nt);  
+        return soundId;  
+    }  
+    
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		if (keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) {
+			changeActivity(SignalDetectionActivity.this, MenuActivity.class);
+		}
+		return true;
+	}
 }
