@@ -11,8 +11,10 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class MenuActivity extends ControllerActivity {
-	private Button btnSignalDetection;
-	private Button btnBpnnLocation;
+	private Button btnCollection;
+	private Button btnNNTraing;
+	private Button btnNNTesting;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -27,21 +29,29 @@ public class MenuActivity extends ControllerActivity {
 	}
 	
 	private void initListeners() {
-		btnSignalDetection 		= (Button) findViewById(R.id.meu_signal_detection);
-		btnBpnnLocation 		= (Button) findViewById(R.id.meu_bpnn_location);
+		btnCollection 		= (Button) findViewById(R.id.meu_collection);
+		btnNNTraing 		= (Button) findViewById(R.id.meu_nn_training);
+		btnNNTesting 		= (Button) findViewById(R.id.meu_nn_testing);
 		
 	
-		btnSignalDetection.setOnClickListener(new Button.OnClickListener() {
+		btnCollection.setOnClickListener(new Button.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				changeActivity(MenuActivity.this, SignalDetectionActivity.class);
+				changeActivity(MenuActivity.this, CollectionActivity.class);
 			}
 		});
 		
-		btnBpnnLocation.setOnClickListener(new Button.OnClickListener() {
+		btnNNTraing.setOnClickListener(new Button.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				changeActivity(MenuActivity.this, BPNNLocationActivity.class);
+				changeActivity(MenuActivity.this, TrainingActivity.class);
+			}
+		});
+		
+		btnNNTesting.setOnClickListener(new Button.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				changeActivity(MenuActivity.this, TestingActivity.class);
 			}
 		});
 	}

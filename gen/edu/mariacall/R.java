@@ -37,9 +37,9 @@ public final class R {
         public static final int push_call=0x7f020007;
     }
     public static final class id {
-        public static final int action_call=0x7f090024;
-        public static final int action_location=0x7f090023;
-        public static final int action_settings=0x7f090022;
+        public static final int action_call=0x7f09003a;
+        public static final int action_location=0x7f090039;
+        public static final int action_settings=0x7f090038;
         public static final int bpn_btnStart=0x7f090007;
         public static final int bpn_cBoxKalman=0x7f090003;
         public static final int bpn_cBoxKalmanParm=0x7f090005;
@@ -49,45 +49,72 @@ public final class R {
         public static final int bpn_gLay2=0x7f090002;
         public static final int bpn_lLay1=0x7f090001;
         public static final int bpn_txtAreaID=0x7f090008;
-        public static final int checkBox1=0x7f090014;
-        public static final int container=0x7f090009;
-        public static final int imageView1=0x7f09000a;
-        public static final int imageView2=0x7f09000d;
-        public static final int linearLayout1=0x7f090011;
-        public static final int linearLayout2=0x7f090012;
-        public static final int linearLayout3=0x7f09001e;
-        public static final int meu_bpnn_location=0x7f090010;
-        public static final int meu_linearLayout1=0x7f09000e;
-        public static final int meu_signal_detection=0x7f09000f;
-        public static final int sig_btnStart=0x7f09001d;
-        public static final int sig_cBoxDB=0x7f09001a;
-        public static final int sig_cBoxKalman=0x7f09001b;
-        public static final int sig_cBoxWinAvg=0x7f09001c;
-        public static final int sig_eTxtDetectTimes=0x7f090019;
-        public static final int sig_eTxtID=0x7f090015;
-        public static final int sig_eTxtQuantity=0x7f090017;
-        public static final int sig_lLayChart=0x7f090021;
-        public static final int sig_tViwCurrentMAC=0x7f09001f;
-        public static final int sig_tViwCurrentRSSI=0x7f090020;
-        public static final int sig_tViwDetectTimes=0x7f090018;
-        public static final int sig_tViwID=0x7f090013;
-        public static final int sig_tViwQuantity=0x7f090016;
-        public static final int view1=0x7f09000c;
-        public static final int view1FrameLayout=0x7f09000b;
+        public static final int checkBox1=0x7f09000c;
+        public static final int container=0x7f09001b;
+        public static final int imageView1=0x7f09001c;
+        public static final int imageView2=0x7f09001f;
+        public static final int linearLayout1=0x7f090009;
+        public static final int linearLayout2=0x7f09000a;
+        public static final int linearLayout3=0x7f090017;
+        public static final int meu_collection=0x7f090021;
+        public static final int meu_linearLayout1=0x7f090020;
+        public static final int meu_nn_testing=0x7f090023;
+        public static final int meu_nn_training=0x7f090022;
+        public static final int sig_btnStart=0x7f090016;
+        public static final int sig_cBoxAuto=0x7f090015;
+        public static final int sig_cBoxDB=0x7f090012;
+        public static final int sig_cBoxKalman=0x7f090013;
+        public static final int sig_cBoxWinAvg=0x7f090014;
+        public static final int sig_eTxtDetectTimes=0x7f090011;
+        public static final int sig_eTxtID=0x7f09000d;
+        public static final int sig_eTxtQuantity=0x7f09000f;
+        public static final int sig_lLayChart=0x7f09001a;
+        public static final int sig_tViwCurrentMAC=0x7f090018;
+        public static final int sig_tViwCurrentRSSI=0x7f090019;
+        public static final int sig_tViwDetectTimes=0x7f090010;
+        public static final int sig_tViwID=0x7f09000b;
+        public static final int sig_tViwQuantity=0x7f09000e;
+        public static final int trn_btnTest=0x7f090037;
+        public static final int trn_tViwView=0x7f090036;
+        public static final int tst_btnStart=0x7f090030;
+        public static final int tst_cBoxAuto=0x7f09002f;
+        public static final int tst_cBoxDB=0x7f09002c;
+        public static final int tst_cBoxKalman=0x7f09002d;
+        public static final int tst_cBoxKalmanWeight=0x7f090032;
+        public static final int tst_cBoxWinAvg=0x7f09002e;
+        public static final int tst_cBoxWinAvgWeight=0x7f090033;
+        public static final int tst_eTxtDetectTimes=0x7f09002b;
+        public static final int tst_eTxtID=0x7f090027;
+        public static final int tst_eTxtQuantity=0x7f090029;
+        public static final int tst_lLay1=0x7f090024;
+        public static final int tst_lLay2=0x7f090025;
+        public static final int tst_lLay3=0x7f090031;
+        public static final int tst_lLayChart=0x7f090035;
+        public static final int tst_tViwDetectTimes=0x7f09002a;
+        public static final int tst_tViwID=0x7f090026;
+        public static final int tst_tViwQuantity=0x7f090028;
+        public static final int tst_txtAreaID=0x7f090034;
+        public static final int view1=0x7f09001e;
+        public static final int view1FrameLayout=0x7f09001d;
     }
     public static final class layout {
         public static final int layout_bpnn_location=0x7f030000;
-        public static final int layout_main=0x7f030001;
-        public static final int layout_map_1f=0x7f030002;
-        public static final int layout_menu=0x7f030003;
-        public static final int layout_signal_detection=0x7f030004;
+        public static final int layout_collection=0x7f030001;
+        public static final int layout_main=0x7f030002;
+        public static final int layout_map_1f=0x7f030003;
+        public static final int layout_menu=0x7f030004;
+        public static final int layout_testing=0x7f030005;
+        public static final int layout_training=0x7f030006;
     }
     public static final class menu {
         public static final int main=0x7f080000;
+        public static final int neuroph=0x7f080001;
     }
     public static final class string {
         public static final int action_settings=0x7f050001;
         public static final int app_name=0x7f050000;
+        public static final int hello_world=0x7f050003;
+        public static final int title_activity_neuroph=0x7f050002;
     }
     public static final class style {
         /** 

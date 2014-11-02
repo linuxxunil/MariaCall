@@ -39,7 +39,7 @@
             
             <TextView
                 android:id="@+id/sig_tViwQuantity"
-                android:layout_width="wrap_content"
+                android:layout_width="31dp"
                 android:layout_height="wrap_content"
                 android:layout_alignBottom="@+id/linearLayout1"
                 android:layout_marginLeft="10dp"
@@ -51,11 +51,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="10dp"
-                android:text="2" />
+                android:text="3" />
 
             <TextView
                 android:id="@+id/sig_tViwDetectTimes"
-                android:layout_width="wrap_content"
+                android:layout_width="30dp"
                 android:layout_height="wrap_content"
                 android:layout_alignBottom="@+id/linearLayout1"
                 android:layout_marginLeft="10dp"
@@ -67,7 +67,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="10dp"
-                android:text="100" />
+                android:text="70" />
 
              <CheckBox
                 android:id="@+id/sig_cBoxDB"
@@ -88,7 +88,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:checked="false"
-                android:text="winAvg" />
+                android:text="wAvg" />
+            <CheckBox
+                android:id="@+id/sig_cBoxAuto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="auto" />
             
 
             <Button

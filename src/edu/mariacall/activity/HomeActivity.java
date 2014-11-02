@@ -53,7 +53,7 @@ public class HomeActivity extends ControllerActivity {
 	}
 	
 	private void initValueToViewResult(Message msg) {
-		changeActivity(HomeActivity.this, SignalDetectionActivity.class);
+		changeActivity(HomeActivity.this, CollectionActivity.class);
 	}
 	
 }
