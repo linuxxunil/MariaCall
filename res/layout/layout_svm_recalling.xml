@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/white"
+    android:gravity="top" >
+
+    <LinearLayout
+        android:id="@+id/svt_lLay1"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:orientation="vertical" >
+
+        <LinearLayout
+            android:id="@+id/svt_lLay2"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:layout_weight="0"
+            android:orientation="horizontal" >
+
+            <TextView
+                android:id="@+id/svt_tViwID"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignBottom="@+id/linearLayout1"
+                android:layout_marginLeft="10dp"
+                android:layout_toRightOf="@+id/checkBox1"
+                android:text="AreaID" />
+
+            <EditText
+                android:id="@+id/svt_eTxtID"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0" />
+
+            <TextView
+                android:id="@+id/svt_tViwQuantity"
+                android:layout_width="31dp"
+                android:layout_height="wrap_content"
+                android:layout_alignBottom="@+id/linearLayout1"
+                android:layout_marginLeft="10dp"
+                android:layout_toRightOf="@+id/checkBox1"
+                android:text="基站數量" />
+
+            <EditText
+                android:id="@+id/svt_eTxtQuantity"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:text="3" />
+
+            <TextView
+                android:id="@+id/svt_tViwDetectTimes"
+                android:layout_width="30dp"
+                android:layout_height="wrap_content"
+                android:layout_alignBottom="@+id/linearLayout1"
+                android:layout_marginLeft="10dp"
+                android:layout_toRightOf="@+id/checkBox1"
+                android:text="偵測次數" />
+
+            <EditText
+                android:id="@+id/svt_eTxtDetectTimes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:text="50" />
+
+            <CheckBox
+                android:id="@+id/svt_cBoxDB"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="DB" />
+
+            <CheckBox
+                android:id="@+id/svt_cBoxKalman"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="kalman" />
+
+            <CheckBox
+                android:id="@+id/svt_cBoxWinAvg"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="wAvg" />
+
+            <CheckBox
+                android:id="@+id/svt_cBoxAuto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="auto" />
+
+            <Button
+                android:id="@+id/svt_btnStart"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="20dp"
+                android:text="啟動" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/svt_lLay3"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:layout_weight="0"
+            android:orientation="horizontal" >
+
+            <CheckBox
+                android:id="@+id/svt_cBoxKalmanModel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="KalmanModel" />
+
+            <CheckBox
+                android:id="@+id/svt_cBoxWinAvgModel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="WinAvgModel" />
+
+            <TextView
+                android:id="@+id/svt_txtAreaID"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+            	android:layout_marginLeft="10dp"
+                android:text="AreaID=0"
+                android:textSize="20sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/svt_lLayChart"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_weight="10"
+            android:orientation="vertical" >
+        </LinearLayout>
+    </LinearLayout>
+
+</RelativeLayout>

@@ -14,6 +14,7 @@ public class MenuActivity extends ControllerActivity {
 	private Button btnCollection;
 	private Button btnNNTraing;
 	private Button btnNNTesting;
+	private Button btnSVMTesting;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +33,7 @@ public class MenuActivity extends ControllerActivity {
 		btnCollection 		= (Button) findViewById(R.id.meu_collection);
 		btnNNTraing 		= (Button) findViewById(R.id.meu_nn_training);
 		btnNNTesting 		= (Button) findViewById(R.id.meu_nn_testing);
+		btnSVMTesting 		= (Button) findViewById(R.id.meu_svm_testing);
 		
 	
 		btnCollection.setOnClickListener(new Button.OnClickListener() {
@@ -51,7 +53,14 @@ public class MenuActivity extends ControllerActivity {
 		btnNNTesting.setOnClickListener(new Button.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				changeActivity(MenuActivity.this, TestingActivity.class);
+				changeActivity(MenuActivity.this, AnnRecallingActivity.class);
+			}
+		});
+		
+		btnSVMTesting.setOnClickListener(new Button.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				changeActivity(MenuActivity.this, SvmRecallingActivity.class);
 			}
 		});
 	}

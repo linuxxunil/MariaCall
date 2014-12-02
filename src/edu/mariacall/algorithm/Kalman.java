@@ -15,7 +15,7 @@ public class Kalman {
 		this.X = X;
 		this.P = P;
 		this.Q = Q;
-		this.R = 1;	
+		this.R = R;	
 	}
 
 	public void correct(double currentZ)

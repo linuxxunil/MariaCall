@@ -24,9 +24,32 @@ public class DatabaseTable {
 		}
 	}
 	
-	static public class Testing {
+	static public class AnnTesting {
 		// table name define
-		public static String name = "Testing";
+		public static String name = "AnnTesting";
+		
+		public static final String colDeviceID 	= "id";
+		public static final String colPredict	= "predict";
+		public static final String colDeviceMAC = "device";
+		public static final String colRSSI 		= "rssi";
+		public static final String colWinAvg	= "winAvg";
+		public static final String colKalman 	= "kalman";
+
+		// sql syntax : create
+		public static String create() {
+			return "CREATE TABLE IF NOT EXISTS " + name + "("
+					+ colDeviceID	+ " nvarchar(3)	NOT NULL,"
+					+ colPredict	+ " nvarchar(3)	NOT NULL,"
+					+ colDeviceMAC	+ " nvarchar(64)	NOT NULL,"
+					+ colRSSI		+ " nvarchar(32)	NOT NULL,"
+					+ colWinAvg 	+ " nvarchar(1) NULL    ,"
+					+ colKalman 	+ " nvarchar(1) NULL    )";
+		}
+	}
+	
+	static public class SvmTesting {
+		// table name define
+		public static String name = "SvmTesting";
 		
 		public static final String colDeviceID 	= "id";
 		public static final String colPredict	= "predict";

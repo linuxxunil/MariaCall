@@ -2,10 +2,15 @@ package edu.mariacall.activity;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Random;
+
+import libsvm.svm;
+import libsvm.svm_model;
+import libsvm.svm_node;
 
 import org.achartengine.ChartFactory;
 import org.achartengine.GraphicalView;
@@ -19,6 +24,7 @@ import org.neuroph.core.learning.LearningRule;
 import org.neuroph.nnet.MultiLayerPerceptron;
 import org.neuroph.util.TransferFunctionType;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -27,7 +33,9 @@ import android.app.AlertDialog.Builder;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothAdapter.LeScanCallback;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.graphics.Paint.Align;
 import android.os.Bundle;
 import android.os.Handler;
@@ -46,15 +54,15 @@ import edu.mariacall.database.DatabaseTable;
 import edu.mariacall.database.SqliteDriver;
 import edu.mariacall.location.Beacon;
 
-public class TestingActivity extends ControllerActivity {
+public class SvmRecallingActivity extends ControllerActivity {
 	/* UI */
 	private Button btnStart = null;
 	private CheckBox cBoxDB = null;
 	private CheckBox cBoxWinAvg = null;
 	private CheckBox cBoxKalman = null;
 	private CheckBox cBoxAuto = null;
-	private CheckBox cBoxWinAvgWeight = null;
-	private CheckBox cBoxKalmanWeight = null;
+	private CheckBox cBoxWinAvgModel = null;
+	private CheckBox cBoxKalmanModel = null;
 	private TextView tViwAreaID = null;
 	private EditText eTxtID = null;
 	private EditText eTxtQuantity = null;
@@ -74,13 +82,12 @@ public class TestingActivity extends ControllerActivity {
 	private final int maxWinAvg = 10;
 	private double[][] winAvg;
 	private Kalman[] kalman = null;
-	private NeuralNetwork nnet = null;
-	private LearningRule nnRule = null;
-	private String nnWeightFile00 = "/sdcard/data/Mariacall/wei/NN00.wei";
-	private String nnWeightFile01 = "/sdcard/data/Mariacall/wei/NN01.wei";
-	private String nnWeightFile02 = "/sdcard/data/Mariacall/wei/NN02.wei";
-	private String nnWeightFile03 = "/sdcard/data/Mariacall/wei/NN03.wei";
-	private double[] weight = null;
+	private svm_node[] svmInput;
+	private svm_model svmModel;
+	private String svmFile00 = "/sdcard/data/Mariacall/SVM/SVM00.model";
+	private String svmFile01 = "/sdcard/data/Mariacall/SVM/SVM01.model";
+	private String svmFile02 = "/sdcard/data/Mariacall/SVM/SVM02.model";
+	private String svmFile03 = "/sdcard/data/Mariacall/SVM/SVM03.model";
 
 	/* Chart */
 	private int maxTimes = 0;
@@ -101,6 +108,8 @@ public class TestingActivity extends ControllerActivity {
 	private XYMultipleSeriesDataset mDataset;
 	private GraphicalView chart;
 	private XYMultipleSeriesRenderer renderer;
+	private int id;
+	private int idCount=0;
 
 	/* Initial */
 	@Override
@@ -125,7 +134,7 @@ public class TestingActivity extends ControllerActivity {
 	}
 
 	private void initLayout() {
-		setContentView(R.layout.layout_testing);
+		setContentView(R.layout.layout_svm_recalling);
 	}
 
 	private void initHandler() {
@@ -142,18 +151,18 @@ public class TestingActivity extends ControllerActivity {
 	}
 
 	private void initListeners() {
-		btnStart = (Button) findViewById(R.id.tst_btnStart);
-		eTxtID = (EditText) findViewById(R.id.tst_eTxtID);
-		eTxtQuantity = (EditText) findViewById(R.id.tst_eTxtQuantity);
-		eTxtDetectTimes = (EditText) findViewById(R.id.tst_eTxtDetectTimes);
-		cBoxDB = (CheckBox) findViewById(R.id.tst_cBoxDB);
-		cBoxKalman = (CheckBox) findViewById(R.id.tst_cBoxKalman);
-		cBoxWinAvg = (CheckBox) findViewById(R.id.tst_cBoxWinAvg);
-		cBoxAuto = (CheckBox) findViewById(R.id.tst_cBoxAuto);
-		cBoxKalmanWeight = (CheckBox) findViewById(R.id.tst_cBoxKalmanWeight);
-		cBoxWinAvgWeight = (CheckBox) findViewById(R.id.tst_cBoxWinAvgWeight);
-		tViwAreaID = (TextView) findViewById(R.id.tst_txtAreaID);
-		lLayChart = (LinearLayout) findViewById(R.id.tst_lLayChart);
+		btnStart = (Button) findViewById(R.id.svt_btnStart);
+		eTxtID = (EditText) findViewById(R.id.svt_eTxtID);
+		eTxtQuantity = (EditText) findViewById(R.id.svt_eTxtQuantity);
+		eTxtDetectTimes = (EditText) findViewById(R.id.svt_eTxtDetectTimes);
+		cBoxDB = (CheckBox) findViewById(R.id.svt_cBoxDB);
+		cBoxKalman = (CheckBox) findViewById(R.id.svt_cBoxKalman);
+		cBoxWinAvg = (CheckBox) findViewById(R.id.svt_cBoxWinAvg);
+		cBoxAuto = (CheckBox) findViewById(R.id.svt_cBoxAuto);
+		cBoxKalmanModel = (CheckBox) findViewById(R.id.svt_cBoxKalmanModel);
+		cBoxWinAvgModel = (CheckBox) findViewById(R.id.svt_cBoxWinAvgModel);
+		tViwAreaID = (TextView) findViewById(R.id.svt_txtAreaID);
+		lLayChart = (LinearLayout) findViewById(R.id.svt_lLayChart);
 
 		btnStart.setOnClickListener(new Button.OnClickListener() {
 			@Override
@@ -181,14 +190,13 @@ public class TestingActivity extends ControllerActivity {
 		setWinAvg();
 		setOther();
 		// Multi Layer Perceptron
-		setNN();
-
+		setSVM();
 	}
 
 	private void initDatabase() {
 		db = new SqliteDriver(dbPath);
 		db.onConnect();
-		db.createTable(DatabaseTable.Testing.create());
+		db.createTable(DatabaseTable.SvmTesting.create());
 		db.close();
 	}
 
@@ -203,24 +211,22 @@ public class TestingActivity extends ControllerActivity {
 		maxTimes = Integer.valueOf(eTxtDetectTimes.getText().toString());
 		/* reset chart */
 		if (dataSetLen != n) {
-			
+
 			dataSetLen = n;
 			setChart();
 			setKalman();
 			setWinAvg();
 			setOther();
+			setSVM();
 		} else {
 			for (int i = 0; i < dataSetLists.length; i++) {
 				dataSetLists[i].clear();
 			}
 		}
-		setNN();
+		loadSVM();
 	}
 
 	private void setChart() {
-		// for (int i = 0; i < dataSetLen; i++)
-		// macSet[i] = new String();
-
 		dataSetLists = new LinkedList[dataSetLen];
 		for (int i = 0; i < dataSetLen; i++)
 			dataSetLists[i] = new LinkedList<Double>();
@@ -261,10 +267,7 @@ public class TestingActivity extends ControllerActivity {
 		}
 
 		macSet = new String[dataSetLen];
-		macSet[0] = new String("78:A5:04:60:02:26");
-		macSet[1] = new String("D0:39:72:D9:FA:65");
-		//macSet[2] = new String("D0:39:72:D9:FE:D6");
-		macSet[2] = new String("D0:39:72:D9:FA:2A");
+		userMacSet(macSet);
 	}
 
 	private void setWinAvg() {
@@ -276,32 +279,32 @@ public class TestingActivity extends ControllerActivity {
 	private void setKalman() {
 		kalman = new Kalman[dataSetLen];
 		for (int i = 0; i < kalman.length; i++)
-			kalman[i] = new Kalman(-59, 0.1, 0.1, 0.01);
+			kalman[i] = new Kalman(kX, kP, kQ, kR);
 	}
 
-	private void setNN() {
-
-		String nnWeightFile;
-		if (cBoxWinAvgWeight.isChecked() && cBoxKalmanWeight.isChecked()) {
-			nnWeightFile = nnWeightFile03;
-			nnet = new MultiLayerPerceptron(TransferFunctionType.SIGMOID, 3,
-					20, 11);
-		} else if (cBoxWinAvgWeight.isChecked()) {
-			nnWeightFile = nnWeightFile02;
-			nnet = new MultiLayerPerceptron(TransferFunctionType.SIGMOID, 3,
-					20, 11);
-		} else if (cBoxKalmanWeight.isChecked()) {
-			nnWeightFile = nnWeightFile01;
-			nnet = new MultiLayerPerceptron(TransferFunctionType.SIGMOID, 3,
-					20, 11);
-		} else {
-			nnWeightFile = nnWeightFile00;
-			nnet = new MultiLayerPerceptron(TransferFunctionType.SIGMOID, 3,
-					24, 11);
-
+	private void loadSVM() {
+		
+		try {
+			if (cBoxWinAvgModel.isChecked() && cBoxKalmanModel.isChecked()) {
+				svmModel = svm.svm_load_model(svmFile03);
+			} else if (cBoxWinAvgModel.isChecked()) {
+				svmModel = svm.svm_load_model(svmFile02);
+			} else if (cBoxKalmanModel.isChecked()) {
+				svmModel = svm.svm_load_model(svmFile01);
+			} else {
+				svmModel = svm.svm_load_model(svmFile00);
+			}
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-		weight = getWeight(nnWeightFile);
-		nnet.setWeights(weight);
+	}
+	private void setSVM() {
+		svmInput = new svm_node[dataSetLen];
+		for (int i = 0; i < svmInput.length; i++)
+			svmInput[i] = new svm_node();
+		loadSVM();
 	}
 
 	private void sendMessage(int what, int statusCode, String mac) {
@@ -316,61 +319,31 @@ public class TestingActivity extends ControllerActivity {
 		}
 	}
 
-	private void insertTestingInfo(int deviceID,int predict, String[] macSet, double[] rssiSet,
-			 boolean winAvg, boolean kalman) {
-		String sql = "INSERT INTO " + DatabaseTable.Testing.name + "(\""
-				+ DatabaseTable.Testing.colDeviceID + "\"," + "	\""
-				+ DatabaseTable.Testing.colPredict + "\"," + "	\""
-				+ DatabaseTable.Testing.colDeviceMAC + "\"," + " \""
-				+ DatabaseTable.Testing.colRSSI + "\"," + " \""
-				+ DatabaseTable.Testing.colWinAvg + "\"," + " \""
-				+ DatabaseTable.Testing.colKalman + "\")" 
-				+ " VALUES (" 
-				+ "\"" + deviceID 	+ "\"," 
-				+ "\"" + predict 	+ "\"," ;
-				for (int i=0; i<macSet.length; i++) {
-					if ( i!=0) sql += ";" + macSet[i];
-					else sql +=  "\"" + macSet[i] ;
-				}
-				for (int i=0; i<rssiSet.length; i++) {
-					if ( i!=0) sql += ";" + rssiSet[i];
-					else sql += "\",\"" + rssiSet[i] ;
-				}
-				sql +="\",\"" + (winAvg ? 1 : 0) + "\"," 
-					+ "\"" + (kalman ? 1 : 0) + "\")";
-				db.insert(sql);
-	}
-
-	private double[] getWeight(String nnName) {
-		FileReader fr = null;
-		BufferedReader br = null;
-
-		LinkedList<String> list = new LinkedList<String>();
-		try {
-			fr = new FileReader(nnName);
-			br = new BufferedReader(fr);
-
-			String tmp = "";
-			while ((tmp = br.readLine()) != null) {
-				list.add(tmp);
-			}
-
-			weight = new double[list.size()];
-
-			for (int i = 0; i < list.size(); i++) {
-				weight[i] = Double.valueOf(list.get(i));
-			}
-		} catch (FileNotFoundException e) {
-		} catch (IOException e1) {
-		} finally {
-			try {
-				br.close();
-				fr.close();
-			} catch (Exception e) {
-				// nothing
-			}
+	private void insertTestingInfo(int deviceID, int predict, String[] macSet,
+			double[] rssiSet, boolean winAvg, boolean kalman) {
+		String sql = "INSERT INTO " + DatabaseTable.SvmTesting.name + "(\""
+				+ DatabaseTable.SvmTesting.colDeviceID + "\"," + "	\""
+				+ DatabaseTable.SvmTesting.colPredict + "\"," + "	\""
+				+ DatabaseTable.SvmTesting.colDeviceMAC + "\"," + " \""
+				+ DatabaseTable.SvmTesting.colRSSI + "\"," + " \""
+				+ DatabaseTable.SvmTesting.colWinAvg + "\"," + " \""
+				+ DatabaseTable.SvmTesting.colKalman + "\")" + " VALUES (" + "\""
+				+ deviceID + "\"," + "\"" + predict + "\",";
+		for (int i = 0; i < macSet.length; i++) {
+			if (i != 0)
+				sql += ";" + macSet[i];
+			else
+				sql += "\"" + macSet[i];
 		}
-		return weight;
+		for (int i = 0; i < rssiSet.length; i++) {
+			if (i != 0)
+				sql += ";" + rssiSet[i];
+			else
+				sql += "\",\"" + rssiSet[i];
+		}
+		sql += "\",\"" + (winAvg ? 1 : 0) + "\"," + "\"" + (kalman ? 1 : 0)
+				+ "\")";
+		db.insert(sql);
 	}
 
 	/* Location */
@@ -412,7 +385,7 @@ public class TestingActivity extends ControllerActivity {
 	private void locationStartResult(Message msg) {
 		double rssi = (double) msg.getData().getInt("rssi");
 		String mac = msg.getData().getString("mac");
-		int id = Integer.valueOf(eTxtID.getText().toString());
+		id = Integer.valueOf(eTxtID.getText().toString());
 		int match = 0;
 
 		match = matchMacSet(mac);
@@ -436,14 +409,20 @@ public class TestingActivity extends ControllerActivity {
 			normRssiSet[match] = normalize(rssiSet[match]);
 		}
 
-		int predict = execMLP();
+		int predict = execSVM();
+
+		if ( !tViwAreaID.getText().equals(predict) ) {
+			if ( ++idCount > 3 ) {
+				tViwAreaID.setText("AreaID=" + predict);
+				idCount = 0;
+			}
+		} else idCount = 0;
 		
-		tViwAreaID.setText("AreaID=" + predict);
 		if (cBoxDB.isChecked()) {
-			insertTestingInfo(id, predict,macSet, rssiSet,
+			insertTestingInfo(id, predict, macSet, rssiSet,
 					cBoxWinAvg.isChecked(), cBoxKalman.isChecked());
 		}
-	
+
 		// update chart
 		updateChart(dataSetLists);
 
@@ -451,22 +430,14 @@ public class TestingActivity extends ControllerActivity {
 		checkFinish(dataSetLists);
 	}
 
-	private int execMLP() {
-		nnet.setInput(normRssiSet);
-		nnet.calculate();
-		double[] networkOutput = nnet.getOutput();
-		double max = 2;
-		int id = 0;
-
-		max = networkOutput[0];
-		id = 0;
-		for (int i = 1; i < networkOutput.length; i++) {
-			if (networkOutput[i] > max) {
-				max = networkOutput[i];
-				id = i;
-			}
+	private int execSVM() {
+		
+		for(int i=0; i<svmInput.length; i++) {
+			svmInput[i].index = i+1;
+			svmInput[i].value = normRssiSet[i];
 		}
-		return id;
+
+		return (int)svm.svm_predict(svmModel, svmInput);
 	}
 
 	private int matchMacSet(String mac) {
@@ -475,11 +446,11 @@ public class TestingActivity extends ControllerActivity {
 			if (macSet[i].equals(mac)) {
 				match = i;
 				break;
-			} else if (macSet[i].equals("")) {
-				macSet[i] = mac;
-				match = i;
-				break;
-			}
+			}// else if (macSet[i].equals("")) {
+				// macSet[i] = mac;
+				// match = i;
+				// break;
+				// }
 		}
 		return match;
 	}
@@ -508,6 +479,7 @@ public class TestingActivity extends ControllerActivity {
 	}
 
 	int testCase = 0;
+
 	private void checkFinish(LinkedList<Double>[] list) {
 		boolean finish = true;
 
@@ -523,53 +495,65 @@ public class TestingActivity extends ControllerActivity {
 
 			if (finish) {
 				if (cBoxAuto.isChecked()) {
-					switch (testCase++) {
+					switch (++testCase) {
 					case 1:
 						for (int i = 0; i < list.length; i++)
 							list[i].clear();
+						shoot(this, "00");
 						cBoxWinAvg.setChecked(false);
 						cBoxKalman.setChecked(true);
-						cBoxWinAvgWeight.setChecked(false);
-						cBoxKalmanWeight.setChecked(true);
+						cBoxWinAvgModel.setChecked(false);
+						cBoxKalmanModel.setChecked(true);
 						break;
 					case 2:
 						for (int i = 0; i < list.length; i++)
 							list[i].clear();
+						shoot(this, "01");
 						cBoxWinAvg.setChecked(true);
 						cBoxKalman.setChecked(false);
-						cBoxWinAvgWeight.setChecked(true);
-						cBoxKalmanWeight.setChecked(false);
+						cBoxWinAvgModel.setChecked(true);
+						cBoxKalmanModel.setChecked(false);
 						break;
 					case 3:
 						for (int i = 0; i < list.length; i++)
 							list[i].clear();
+						shoot(this, "02");
 						cBoxWinAvg.setChecked(true);
 						cBoxKalman.setChecked(true);
-						cBoxWinAvgWeight.setChecked(true);
-						cBoxKalmanWeight.setChecked(true);
+						cBoxWinAvgModel.setChecked(true);
+						cBoxKalmanModel.setChecked(true);
 						break;
 					case 4:
+						shoot(this, "03");
 						cBoxWinAvg.setChecked(false);
 						cBoxKalman.setChecked(false);
-						cBoxWinAvgWeight.setChecked(false);
-						cBoxKalmanWeight.setChecked(false);
+						cBoxWinAvgModel.setChecked(false);
+						cBoxKalmanModel.setChecked(false);
 						testCase = 0;
 						btnStart.callOnClick();
 						PlaySound(context);
 						Builder alertDialog = new AlertDialog.Builder(
-								TestingActivity.this);
+								SvmRecallingActivity.this);
 						alertDialog.setTitle("提示");
 						alertDialog.setMessage("測試完成");
 						alertDialog.setPositiveButton("確定", null);
 						alertDialog.show();
 						break;
 					}
-					setNN();
+					setSVM();
 				} else {
 					btnStart.callOnClick();
 					PlaySound(context);
+					if (cBoxKalman.isChecked() && cBoxWinAvg.isChecked())
+						shoot(this, "03");
+					else if (cBoxWinAvg.isChecked())
+						shoot(this, "02");
+					else if (cBoxKalman.isChecked())
+						shoot(this, "01");
+					else
+						shoot(this, "00");
 					Builder alertDialog = new AlertDialog.Builder(
-							TestingActivity.this);
+							SvmRecallingActivity.this);
 					alertDialog.setTitle("提示");
 					alertDialog.setMessage("測試完成");
 					alertDialog.setPositiveButton("確定", null);
@@ -653,8 +637,56 @@ public class TestingActivity extends ControllerActivity {
 
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		if (keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) {
-			changeActivity(TestingActivity.this, MenuActivity.class);
+			changeActivity(SvmRecallingActivity.this, MenuActivity.class);
 		}
 		return true;
+	}
+
+	private Bitmap takeScreenShot(Activity activity) {
+		// View是你需要截圖的View
+		View view = activity.getWindow().getDecorView();
+		view.setDrawingCacheEnabled(true);
+		view.buildDrawingCache();
+		Bitmap b1 = view.getDrawingCache();
+
+		// 得到狀態列高度
+		Rect frame = new Rect();
+		activity.getWindow().getDecorView().getWindowVisibleDisplayFrame(frame);
+		int statusBarHeight = frame.top;
+		System.out.println(statusBarHeight);
+
+		// 得到螢幕長和高　
+		int width = activity.getWindowManager().getDefaultDisplay().getWidth();
+		int height = activity.getWindowManager().getDefaultDisplay()
+				.getHeight();
+		// 去掉標題列
+		// Bitmap b = Bitmap.createBitmap(b1, 0, 25, 320, 455);
+		Bitmap b = Bitmap.createBitmap(b1, 0, statusBarHeight, width, height
+				- statusBarHeight);
+		view.destroyDrawingCache();
+		return b;
+	}
+
+	// 儲存到sdcard
+	private void savePic(Bitmap b, String strFileName) {
+		FileOutputStream fos = null;
+		try {
+			fos = new FileOutputStream(strFileName);
+			if (null != fos) {
+				b.compress(Bitmap.CompressFormat.PNG, 90, fos);
+				fos.flush();
+				fos.close();
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void shoot(Activity a, String mode) {
+		String path = "/sdcard/data/Mariacall/SvmRecalling-" + mode + "_" + id
+				+ ".png";
+		savePic(takeScreenShot(a), path);
 	}
 }

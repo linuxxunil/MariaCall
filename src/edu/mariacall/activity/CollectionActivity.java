@@ -111,18 +111,10 @@ public class CollectionActivity extends ControllerActivity {
 
 		initDatabase();
 
-		initAlgorithm();
-
 		if (beacon == null)
 			beacon = new Beacon(context);
 	}
 
-	private void initAlgorithm() {
-		// initial windows average
-
-		// initial kalman
-		// kalman = new Kalman(-59, 0.1, 0.1, 0.01);
-	}
 
 	private void initLayout() {
 		setContentView(R.layout.layout_collection);
@@ -139,6 +131,7 @@ public class CollectionActivity extends ControllerActivity {
 			setChart();
 			setKalman();
 			setWinAvg();
+			setMacSet();
 		} else {
 			for (int i = 0; i < dataSetLists.length; i++) {
 				dataSetLists[i].clear();
@@ -146,6 +139,13 @@ public class CollectionActivity extends ControllerActivity {
 		}
 	}
 
+	private void setMacSet() {
+		
+		macSet = new String[dataSetLen];
+		userMacSet(macSet);
+		
+	}
+	
 	private void setWinAvg() {
 		winAvg = new double[dataSetLen][maxWinAvg];
 		for (int i = 0; i < kalman.length; i++)
@@ -155,7 +155,7 @@ public class CollectionActivity extends ControllerActivity {
 	private void setKalman() {
 		kalman = new Kalman[dataSetLen];
 		for (int i = 0; i < kalman.length; i++)
-			kalman[i] = new Kalman(-59, 0.1, 0.1, 0.01);
+			kalman[i] = new Kalman(kX, kP, kQ, kR);
 	}
 
 	private void initChart() {
@@ -164,16 +164,11 @@ public class CollectionActivity extends ControllerActivity {
 		setChart();
 		setKalman();
 		setWinAvg();
+		setMacSet();
 	}
 
 	private void setChart() {
-		macSet = new String[dataSetLen];
-		macSet[0] = new String("78:A5:04:60:02:26");
-		macSet[1] = new String("D0:39:72:D9:FA:65");
-		// macSet[2] = new String("D0:39:72:D9:FE:D6");
-		macSet[2] = new String("D0:39:72:D9:FA:2A");
-		// for (int i = 0; i < dataSetLen; i++)
-		// macSet[i] = new String();
+		
 
 		dataSetLists = new LinkedList[dataSetLen];
 		for (int i = 0; i < dataSetLen; i++)
@@ -320,11 +315,11 @@ public class CollectionActivity extends ControllerActivity {
 			if (macSet[i].equals(mac)) {
 				match = i;
 				break;
-			} else if (macSet[i].equals("")) {
-				macSet[i] = mac;
-				match = i;
-				break;
-			}
+			} //else if (macSet[i].equals("")) {
+				//macSet[i] = mac;
+			//	match = i;
+			//	break;
+			//}
 		}
 		return match;
 	}
@@ -346,35 +341,35 @@ public class CollectionActivity extends ControllerActivity {
 
 			if (finish) {
 				if (cBoxAuto.isChecked()) {
-					switch (testCase++) {
+					switch (++testCase) {
 					case 1:
 						for (int i = 0; i < list.length; i++)
 							list[i].clear();
+						shoot(this,"00");
 						cBoxWinAvg.setChecked(false);
 						cBoxKalman.setChecked(true);
-						shoot(this,"01");
 						break;
 					case 2:
 						for (int i = 0; i < list.length; i++)
 							list[i].clear();
+						shoot(this,"01");
 						cBoxWinAvg.setChecked(true);
 						cBoxKalman.setChecked(false);
-						shoot(this,"02");
 						break;
 					case 3:
 						for (int i = 0; i < list.length; i++)
 							list[i].clear();
+						shoot(this,"02");
 						cBoxWinAvg.setChecked(true);
 						cBoxKalman.setChecked(true);
-						shoot(this,"03");
 						break;
 					case 4:
+						shoot(this,"03");
 						cBoxWinAvg.setChecked(false);
 						cBoxKalman.setChecked(false);
 						testCase = 0;
 						btnStart.callOnClick();
 						PlaySound(context);
-						shoot(this,"00");
 						Builder alertDialog = new AlertDialog.Builder(
 								CollectionActivity.this);
 						alertDialog.setTitle("´£¥Ü");
@@ -584,7 +579,7 @@ public class CollectionActivity extends ControllerActivity {
 	}
 
 	public void shoot(Activity a,String mode) {
-		String path = "/sdcard/data/Mariacall/shoot-"+mode+"_"+id+".png";
+		String path = "/sdcard/data/Mariacall/train-"+mode+"_"+id+".png";
 		savePic(takeScreenShot(a), path);
 	}
 }
