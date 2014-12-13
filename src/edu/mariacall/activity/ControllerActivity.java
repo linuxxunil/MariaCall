@@ -18,7 +18,7 @@ public class ControllerActivity extends Activity {
 	final protected double kX = -59;
 	final protected double kP = 0.1;
 	final protected double kQ = 0.1;
-	final protected double kR = 1;
+	final protected double kR = 2;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -31,10 +31,18 @@ public class ControllerActivity extends Activity {
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 	}
 
-	protected void userMacSet(String[] macSet) {
-		macSet[0] = new String("78:A5:04:60:02:26");
-		macSet[1] = new String("D0:39:72:D9:FA:65");
-		macSet[2] = new String("D0:39:72:D9:FE:9F");
+	protected String[] getFloorMac(int i) {
+		String[] floorMac = null;
+		switch (i) {
+		case 2:
+			floorMac = new String[4];
+			floorMac[0] = new String("78:A5:04:60:02:26");
+			floorMac[1] = new String("D0:39:72:D9:FA:65");
+			floorMac[2] = new String("D0:39:72:D9:FE:9F");
+			floorMac[3] = new String("78:A5:04:60:00:44");
+		break;
+		}
+		return floorMac;
 	}
 	
 	protected void sendMessage(int what, int statusCode ) {
@@ -55,5 +63,4 @@ public class ControllerActivity extends Activity {
 		startActivity(intent);
 		finish();
 	}
-
 }

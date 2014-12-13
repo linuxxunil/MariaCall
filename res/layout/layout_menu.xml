@@ -46,6 +46,14 @@
             android:layout_alignParentTop="true"
             android:gravity="center_vertical"
             android:text="SVM Testing" />
+        
+        <Button
+            android:id="@+id/meu_svm_map"
+            android:layout_width="fill_parent"
+            android:layout_height="match_parent"
+            android:layout_alignParentTop="true"
+            android:gravity="center_vertical"
+            android:text="SVM Map" />
     </LinearLayout>
 
 </RelativeLayout>

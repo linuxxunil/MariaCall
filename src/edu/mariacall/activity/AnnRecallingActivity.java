@@ -87,7 +87,7 @@ public class AnnRecallingActivity extends ControllerActivity {
 
 
 	/* Chart */  int maxTimes = 0;
-	private String[] macSet;
+	private String[] floorMac;
 	private int[] sequence;
 	private double[] rssiSet;
 	private double[] normRssiSet;
@@ -146,18 +146,18 @@ public class AnnRecallingActivity extends ControllerActivity {
 	}
 
 	private void initListeners() {
-		btnStart = (Button) findViewById(R.id.ant_btnStart);
-		eTxtID = (EditText) findViewById(R.id.ant_eTxtID);
-		eTxtQuantity = (EditText) findViewById(R.id.ant_eTxtQuantity);
-		eTxtDetectTimes = (EditText) findViewById(R.id.ant_eTxtDetectTimes);
-		cBoxDB = (CheckBox) findViewById(R.id.ant_cBoxDB);
-		cBoxKalman = (CheckBox) findViewById(R.id.ant_cBoxKalman);
-		cBoxWinAvg = (CheckBox) findViewById(R.id.ant_cBoxWinAvg);
-		cBoxAuto = (CheckBox) findViewById(R.id.ant_cBoxAuto);
-		cBoxKalmanWeight = (CheckBox) findViewById(R.id.ant_cBoxKalmanWeight);
-		cBoxWinAvgWeight = (CheckBox) findViewById(R.id.ant_cBoxWinAvgWeight);
-		tViwAreaID = (TextView) findViewById(R.id.ant_txtAreaID);
-		lLayChart = (LinearLayout) findViewById(R.id.ant_lLayChart);
+		btnStart = (Button) findViewById(R.id.anr_btnStart);
+		eTxtID = (EditText) findViewById(R.id.anr_eTxtID);
+		eTxtQuantity = (EditText) findViewById(R.id.anr_eTxtQuantity);
+		eTxtDetectTimes = (EditText) findViewById(R.id.anr_eTxtDetectTimes);
+		cBoxDB = (CheckBox) findViewById(R.id.anr_cBoxDB);
+		cBoxKalman = (CheckBox) findViewById(R.id.anr_cBoxKalman);
+		cBoxWinAvg = (CheckBox) findViewById(R.id.anr_cBoxWinAvg);
+		cBoxAuto = (CheckBox) findViewById(R.id.anr_cBoxAuto);
+		cBoxKalmanWeight = (CheckBox) findViewById(R.id.anr_cBoxKalmanWeight);
+		cBoxWinAvgWeight = (CheckBox) findViewById(R.id.anr_cBoxWinAvgWeight);
+		tViwAreaID = (TextView) findViewById(R.id.anr_txtAreaID);
+		lLayChart = (LinearLayout) findViewById(R.id.anr_lLayChart);
 
 		btnStart.setOnClickListener(new Button.OnClickListener() {
 			@Override
@@ -261,8 +261,8 @@ public class AnnRecallingActivity extends ControllerActivity {
 			rssiSet[i] = 0;
 		}
 
-		macSet = new String[dataSetLen];
-		userMacSet(macSet);
+		floorMac = getFloorMac(2);
+
 	}
 
 	private void setWinAvg() {
@@ -282,19 +282,19 @@ public class AnnRecallingActivity extends ControllerActivity {
 		String nnWeightFile;
 		if (cBoxWinAvgWeight.isChecked() && cBoxKalmanWeight.isChecked()) {
 			nnWeightFile = nnWeightFile03;
-			nnet = new MultiLayerPerceptron(TransferFunctionType.SIGMOID, 3,
+			nnet = new MultiLayerPerceptron(TransferFunctionType.SIGMOID, 4,
 					20, 11);
 		} else if (cBoxWinAvgWeight.isChecked()) {
 			nnWeightFile = nnWeightFile02;
-			nnet = new MultiLayerPerceptron(TransferFunctionType.SIGMOID, 3,
+			nnet = new MultiLayerPerceptron(TransferFunctionType.SIGMOID, 4,
 					20, 11);
 		} else if (cBoxKalmanWeight.isChecked()) {
 			nnWeightFile = nnWeightFile01;
-			nnet = new MultiLayerPerceptron(TransferFunctionType.SIGMOID, 3,
+			nnet = new MultiLayerPerceptron(TransferFunctionType.SIGMOID, 4,
 					20, 11);
 		} else {
 			nnWeightFile = nnWeightFile00;
-			nnet = new MultiLayerPerceptron(TransferFunctionType.SIGMOID, 3,
+			nnet = new MultiLayerPerceptron(TransferFunctionType.SIGMOID, 4,
 					20, 11);
 
 		}
@@ -440,7 +440,7 @@ public class AnnRecallingActivity extends ControllerActivity {
 		
 		tViwAreaID.setText("AreaID=" + predict);
 		if (cBoxDB.isChecked()) {
-			insertTestingInfo(id, predict,macSet, rssiSet,
+			insertTestingInfo(id, predict,floorMac, rssiSet,
 					cBoxWinAvg.isChecked(), cBoxKalman.isChecked());
 		}
 	
@@ -471,8 +471,8 @@ public class AnnRecallingActivity extends ControllerActivity {
 
 	private int matchMacSet(String mac) {
 		int match = -1;
-		for (int i = 0; i < macSet.length; i++) {
-			if (macSet[i].equals(mac)) {
+		for (int i = 0; i < floorMac.length; i++) {
+			if (floorMac[i].equals(mac)) {
 				match = i;
 				break;
 			}// else if (macSet[i].equals("")) {

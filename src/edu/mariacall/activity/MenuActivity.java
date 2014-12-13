@@ -15,6 +15,7 @@ public class MenuActivity extends ControllerActivity {
 	private Button btnNNTraing;
 	private Button btnNNTesting;
 	private Button btnSVMTesting;
+	private Button btnSVMMap;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +35,7 @@ public class MenuActivity extends ControllerActivity {
 		btnNNTraing 		= (Button) findViewById(R.id.meu_nn_training);
 		btnNNTesting 		= (Button) findViewById(R.id.meu_nn_testing);
 		btnSVMTesting 		= (Button) findViewById(R.id.meu_svm_testing);
+		btnSVMMap			= (Button) findViewById(R.id.meu_svm_map);
 		
 	
 		btnCollection.setOnClickListener(new Button.OnClickListener() {
@@ -46,7 +48,7 @@ public class MenuActivity extends ControllerActivity {
 		btnNNTraing.setOnClickListener(new Button.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				changeActivity(MenuActivity.this, TrainingActivity.class);
+				changeActivity(MenuActivity.this, Map1FActivity.class);
 			}
 		});
 		
@@ -63,6 +65,14 @@ public class MenuActivity extends ControllerActivity {
 				changeActivity(MenuActivity.this, SvmRecallingActivity.class);
 			}
 		});
+		
+		btnSVMMap.setOnClickListener(new Button.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				changeActivity(MenuActivity.this, SvmMapActivity.class);
+			}
+		});
+
 	}
 		
 }

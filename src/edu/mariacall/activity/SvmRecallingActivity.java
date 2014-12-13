@@ -78,7 +78,7 @@ public class SvmRecallingActivity extends ControllerActivity {
 	private Beacon beacon = null;
 
 	/* algorithm */
-	private int dataSetLen = -1;
+	private int beaconQuantity = -1;
 	private final int maxWinAvg = 10;
 	private double[][] winAvg;
 	private Kalman[] kalman = null;
@@ -91,7 +91,7 @@ public class SvmRecallingActivity extends ControllerActivity {
 
 	/* Chart */
 	private int maxTimes = 0;
-	private String[] macSet;
+	private String[] floorMac;
 	private int[] sequence;
 	private double[] rssiSet;
 	private double[] normRssiSet;
@@ -151,18 +151,18 @@ public class SvmRecallingActivity extends ControllerActivity {
 	}
 
 	private void initListeners() {
-		btnStart = (Button) findViewById(R.id.svt_btnStart);
-		eTxtID = (EditText) findViewById(R.id.svt_eTxtID);
-		eTxtQuantity = (EditText) findViewById(R.id.svt_eTxtQuantity);
-		eTxtDetectTimes = (EditText) findViewById(R.id.svt_eTxtDetectTimes);
-		cBoxDB = (CheckBox) findViewById(R.id.svt_cBoxDB);
-		cBoxKalman = (CheckBox) findViewById(R.id.svt_cBoxKalman);
-		cBoxWinAvg = (CheckBox) findViewById(R.id.svt_cBoxWinAvg);
-		cBoxAuto = (CheckBox) findViewById(R.id.svt_cBoxAuto);
-		cBoxKalmanModel = (CheckBox) findViewById(R.id.svt_cBoxKalmanModel);
-		cBoxWinAvgModel = (CheckBox) findViewById(R.id.svt_cBoxWinAvgModel);
-		tViwAreaID = (TextView) findViewById(R.id.svt_txtAreaID);
-		lLayChart = (LinearLayout) findViewById(R.id.svt_lLayChart);
+		btnStart = (Button) findViewById(R.id.svr_btnStart);
+		eTxtID = (EditText) findViewById(R.id.svr_eTxtID);
+		eTxtQuantity = (EditText) findViewById(R.id.svr_eTxtQuantity);
+		eTxtDetectTimes = (EditText) findViewById(R.id.svr_eTxtDetectTimes);
+		cBoxDB = (CheckBox) findViewById(R.id.svr_cBoxDB);
+		cBoxKalman = (CheckBox) findViewById(R.id.svr_cBoxKalman);
+		cBoxWinAvg = (CheckBox) findViewById(R.id.svr_cBoxWinAvg);
+		cBoxAuto = (CheckBox) findViewById(R.id.svr_cBoxAuto);
+		cBoxKalmanModel = (CheckBox) findViewById(R.id.svr_cBoxKalmanModel);
+		cBoxWinAvgModel = (CheckBox) findViewById(R.id.svr_cBoxWinAvgModel);
+		tViwAreaID = (TextView) findViewById(R.id.svr_txtAreaID);
+		lLayChart = (LinearLayout) findViewById(R.id.svr_lLayChart);
 
 		btnStart.setOnClickListener(new Button.OnClickListener() {
 			@Override
@@ -185,7 +185,7 @@ public class SvmRecallingActivity extends ControllerActivity {
 	}
 
 	private void initAlgorithm() {
-		dataSetLen = Integer.valueOf(eTxtQuantity.getText().toString());
+		beaconQuantity = Integer.valueOf(eTxtQuantity.getText().toString());
 		setKalman();
 		setWinAvg();
 		setOther();
@@ -202,7 +202,7 @@ public class SvmRecallingActivity extends ControllerActivity {
 
 	private void initChart() {
 		maxTimes = Integer.valueOf(eTxtDetectTimes.getText().toString());
-		dataSetLen = Integer.valueOf(eTxtQuantity.getText().toString());
+		beaconQuantity = Integer.valueOf(eTxtQuantity.getText().toString());
 		setChart();
 	}
 
@@ -210,9 +210,9 @@ public class SvmRecallingActivity extends ControllerActivity {
 		int n = Integer.valueOf(eTxtQuantity.getText().toString());
 		maxTimes = Integer.valueOf(eTxtDetectTimes.getText().toString());
 		/* reset chart */
-		if (dataSetLen != n) {
+		if (beaconQuantity != n) {
 
-			dataSetLen = n;
+			beaconQuantity = n;
 			setChart();
 			setKalman();
 			setWinAvg();
@@ -227,19 +227,19 @@ public class SvmRecallingActivity extends ControllerActivity {
 	}
 
 	private void setChart() {
-		dataSetLists = new LinkedList[dataSetLen];
-		for (int i = 0; i < dataSetLen; i++)
+		dataSetLists = new LinkedList[beaconQuantity];
+		for (int i = 0; i < beaconQuantity; i++)
 			dataSetLists[i] = new LinkedList<Double>();
 
-		series = new XYSeries[dataSetLen];
-		for (int i = 0; i < dataSetLen; i++)
+		series = new XYSeries[beaconQuantity];
+		for (int i = 0; i < beaconQuantity; i++)
 			series[i] = new XYSeries(dataSetName[i]);
 
 		// 創建一個數據集的實例，這個數據集將被用來創建圖表
 		mDataset = new XYMultipleSeriesDataset();
 
 		// 將點集添加到這個數據集中
-		for (int i = 0; i < dataSetLen; i++)
+		for (int i = 0; i < beaconQuantity; i++)
 			mDataset.addSeries(series[i]);
 
 		// 以下都是曲線的樣式和屬性等等的設置，renderer相當於一個用來給圖表做渲染的句柄
@@ -258,26 +258,26 @@ public class SvmRecallingActivity extends ControllerActivity {
 	}
 
 	private void setOther() {
-		sequence = new int[dataSetLen];
-		rssiSet = new double[dataSetLen];
-		normRssiSet = new double[dataSetLen];
-		for (int i = 0; i < dataSetLen; i++) {
+		sequence = new int[beaconQuantity];
+		rssiSet = new double[beaconQuantity];
+		normRssiSet = new double[beaconQuantity];
+		for (int i = 0; i < beaconQuantity; i++) {
 			sequence[i] = 0;
 			rssiSet[i] = 0;
 		}
 
-		macSet = new String[dataSetLen];
-		userMacSet(macSet);
+		floorMac = getFloorMac(2);
+
 	}
 
 	private void setWinAvg() {
-		winAvg = new double[dataSetLen][maxWinAvg];
+		winAvg = new double[beaconQuantity][maxWinAvg];
 		for (int i = 0; i < kalman.length; i++)
 			winAvg[i] = new double[maxWinAvg];
 	}
 
 	private void setKalman() {
-		kalman = new Kalman[dataSetLen];
+		kalman = new Kalman[beaconQuantity];
 		for (int i = 0; i < kalman.length; i++)
 			kalman[i] = new Kalman(kX, kP, kQ, kR);
 	}
@@ -301,7 +301,7 @@ public class SvmRecallingActivity extends ControllerActivity {
 		}
 	}
 	private void setSVM() {
-		svmInput = new svm_node[dataSetLen];
+		svmInput = new svm_node[beaconQuantity];
 		for (int i = 0; i < svmInput.length; i++)
 			svmInput[i] = new svm_node();
 		loadSVM();
@@ -419,7 +419,7 @@ public class SvmRecallingActivity extends ControllerActivity {
 		} else idCount = 0;
 		
 		if (cBoxDB.isChecked()) {
-			insertTestingInfo(id, predict, macSet, rssiSet,
+			insertTestingInfo(id, predict, floorMac, rssiSet,
 					cBoxWinAvg.isChecked(), cBoxKalman.isChecked());
 		}
 
@@ -442,8 +442,8 @@ public class SvmRecallingActivity extends ControllerActivity {
 
 	private int matchMacSet(String mac) {
 		int match = -1;
-		for (int i = 0; i < macSet.length; i++) {
-			if (macSet[i].equals(mac)) {
+		for (int i = 0; i < floorMac.length; i++) {
+			if (floorMac[i].equals(mac)) {
 				match = i;
 				break;
 			}// else if (macSet[i].equals("")) {
@@ -568,7 +568,7 @@ public class SvmRecallingActivity extends ControllerActivity {
 			PointStyle[] styles, boolean fill) {
 		XYMultipleSeriesRenderer renderer = new XYMultipleSeriesRenderer();
 
-		for (int i = 0; i < dataSetLen; i++) {
+		for (int i = 0; i < beaconQuantity; i++) {
 			XYSeriesRenderer r = new XYSeriesRenderer();
 			r.setColor(colors[i]);
 			r.setPointStyle(styles[i]);
@@ -603,21 +603,21 @@ public class SvmRecallingActivity extends ControllerActivity {
 
 	private void updateChart(LinkedList<Double>[] list) {
 		// 移除數據集中舊的點集
-		for (int i = 0; i < dataSetLen; i++)
+		for (int i = 0; i < beaconQuantity; i++)
 			mDataset.removeSeries(series[i]);
 
 		// 點集先清空，為了做成新的點集而准備
-		for (int i = 0; i < dataSetLen; i++)
+		for (int i = 0; i < beaconQuantity; i++)
 			series[i].clear();
 
-		for (int i = 0; i < dataSetLen; i++) {
+		for (int i = 0; i < beaconQuantity; i++) {
 			for (int k = 0; k < list[i].size(); k++) {
 				series[i].add(k, (double) list[i].get(k));
 			}
 		}
 
 		// 在數據集中添加新的點集
-		for (int i = 0; i < dataSetLen; i++)
+		for (int i = 0; i < beaconQuantity; i++)
 			mDataset.addSeries(series[i]);
 
 		// update chart

@@ -76,7 +76,7 @@ public class CollectionActivity extends ControllerActivity {
 	private PointStyle[] dataSetStyles = { PointStyle.CIRCLE,
 			PointStyle.CIRCLE, PointStyle.CIRCLE, PointStyle.CIRCLE };
 	private LinkedList[] dataSetLists;
-	private String[] macSet;
+	private String[] floorMac;
 
 	// background definition
 	private String title = "Signal Strength";
@@ -141,8 +141,8 @@ public class CollectionActivity extends ControllerActivity {
 
 	private void setMacSet() {
 		
-		macSet = new String[dataSetLen];
-		userMacSet(macSet);
+		
+		floorMac = getFloorMac(2);
 		
 	}
 	
@@ -312,7 +312,7 @@ public class CollectionActivity extends ControllerActivity {
 	private int matchMacSet(String mac) {
 		int match = -1;
 		for (int i = 0; i < dataSetLen; i++) {
-			if (macSet[i].equals(mac)) {
+			if (floorMac[i].equals(mac)) {
 				match = i;
 				break;
 			} //else if (macSet[i].equals("")) {
